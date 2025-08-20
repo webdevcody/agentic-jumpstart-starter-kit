@@ -92,3 +92,4 @@ Remember to use the ~ typescript alias for doing imports
 - follow the defined architecture `docs/architecture.md`
 - always have placeholder sections when no data is found `docs/placeholder.md`
 - always show skeleton loaders and display them at a fine grained level `docs/loaders.md`
+- when invoking a server function, always remember it requires theServerFn({ data: PAYLOAD })
