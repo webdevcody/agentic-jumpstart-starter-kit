@@ -1,59 +1,69 @@
 import { Link } from "@tanstack/react-router";
 import { authClient } from "~/lib/auth-client";
+import { ModeToggle } from "./mode-toggle";
+import { Button, buttonVariants } from "./ui/button";
+import { Video } from "lucide-react";
 
 export function Header() {
   const { data: session, isPending } = authClient.useSession();
 
   return (
-    <header className="w-full bg-white dark:bg-gray-900 shadow px-6 py-3 flex items-center justify-between">
-      {/* Left: Logo and text */}
-      <div className="flex items-center gap-2">
-        <img src="/favicon-32x32.png" alt="Logo" className="w-8 h-8 rounded" />
-        <span className="font-bold text-lg text-gray-800 dark:text-gray-100">
-          TanStack Start
-        </span>
-      </div>
-      {/* Middle: Navigation links */}
-      <nav className="flex gap-6">
-        <Link
-          to="/"
-          className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
-        >
-          Home
-        </Link>
-      </nav>
-      {/* Right: Auth button */}
-      <div>
-        {isPending ? (
-          <span className="text-gray-500">...</span>
-        ) : session ? (
-          <div className="flex items-center gap-3">
-            <span className="text-gray-700 dark:text-gray-200 text-sm">
-              {session.user.email}
-            </span>
-            <button
-              onClick={() => authClient.signOut()}
-              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 font-medium"
-            >
-              Sign Out
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container px-8 flex h-14 max-w-screen-2xl items-center">
+        <div className="mr-4 flex gap-8">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <Video />{" "}
+            <span className="hidden font-bold sm:inline-block">TechTube</span>
+          </Link>
+
+          <nav className="flex items-center gap-4 text-sm lg:gap-6">
             <Link
-              to="/sign-in"
-              className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              to="/"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
-              Sign In
+              Home
             </Link>
-            <Link
-              to="/sign-up"
-              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 font-medium"
-            >
-              Sign Up
-            </Link>
-          </div>
-        )}
+          </nav>
+        </div>
+        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+          <div className="w-full flex-1 md:w-auto md:flex-none"></div>
+          <nav className="flex items-center gap-2">
+            {isPending ? (
+              <div className="flex h-9 w-9 items-center justify-center">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : session ? (
+              <>
+                <span className="hidden text-sm text-muted-foreground lg:inline-block">
+                  {session.user.email}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => authClient.signOut()}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link
+                  className={buttonVariants({ variant: "outline" })}
+                  to="/sign-in"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  className={buttonVariants({ variant: "default" })}
+                  to="/sign-up"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+            <ModeToggle />
+          </nav>
+        </div>
       </div>
     </header>
   );

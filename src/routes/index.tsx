@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { authClient } from "~/lib/auth-client";
+import { Hero } from "~/components/Hero";
+import { Footer } from "~/components/Footer";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -7,18 +8,11 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <div className="p-2">
-      <h3>Welcome Home!!!</h3>
-      <button
-        onClick={() =>
-          authClient.signIn.email({
-            email: "test@test.com",
-            password: "test",
-          })
-        }
-      >
-        Sign In
-      </button>
+    <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
+      <main className="flex-1">
+        <Hero />
+      </main>
+      <Footer />
     </div>
   );
 }
