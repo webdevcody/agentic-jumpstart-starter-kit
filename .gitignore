@@ -3,6 +3,7 @@ package-lock.json
 yarn.lock
 .tanstack
 .nitro
+.labs
 
 .DS_Store
 .cache
