@@ -81,3 +81,14 @@ Remember to use the ~ typescript alias for doing imports
   "~/*": ["./src/*"]
 },
 ```
+
+## Remember
+
+- use react-hook-form for form validation `docs/forms.md`
+- use the correct tanstack syntax for routes and server functions `docs/tanstack.md`
+- use the app theme and reference other routes and components `docs/design.md`
+- re-use components if possible found in `src/components`
+- always add authentication middleware to server functions that need it
+- follow the defined architecture `docs/architecture.md`
+- always have placeholder sections when no data is found `docs/placeholder.md`
+- always show skeleton loaders and display them at a fine grained level `docs/loaders.md`

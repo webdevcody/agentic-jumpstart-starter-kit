@@ -32,19 +32,7 @@ A modern video sharing platform built with TanStack Start, allowing users to upl
 - **History**: Track watched videos and resume playback
 - **Watch Later**: Save videos for future viewing
 
-## Technical Architecture
-
-- **Frontend**: React with TanStack Router for SPA navigation
-- **Backend**: Node.js server functions for API endpoints
-- **Database**: PostgreSQL for user data, video metadata, and interactions
-- **Storage**: Cloud object storage for video files and thumbnails
-- **Streaming**: HLS/DASH for adaptive bitrate video delivery
-- **Auth**: Better Auth for user authentication and sessions
-- **Search**: Full-text search with PostgreSQL or dedicated search service
-
 ## User Roles
 
 - **Viewers**: Watch, comment, like, and subscribe
-- **Creators**: Upload videos, manage channels, view analytics
 - **Moderators**: Review flagged content, manage community guidelines
-- **Admins**: Platform-wide content management and user administration
