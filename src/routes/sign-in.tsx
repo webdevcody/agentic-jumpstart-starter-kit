@@ -6,7 +6,14 @@ import { useState, useEffect } from "react";
 import { authClient } from "~/lib/auth-client";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
 import {
   LogIn,
   Eye,
@@ -18,7 +25,7 @@ import {
 } from "lucide-react";
 
 const signInSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -66,12 +73,12 @@ function RouteComponent() {
     return () => clearInterval(interval);
   }, [testimonials.length]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignInForm>({
+  const form = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   const onSubmit = async (data: SignInForm) => {
@@ -207,114 +214,93 @@ function RouteComponent() {
             </p>
           </div>
           <div className="grid gap-6">
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="grid gap-4">
-                {authError && (
-                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
-                    <p className="text-sm text-destructive">{authError}</p>
-                  </div>
-                )}
-                <div className="grid gap-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    disabled={isLoading}
-                    placeholder="name@example.com"
-                    {...register("email")}
-                    className={`transition-all duration-200 ${
-                      errors.email
-                        ? "border-destructive focus-visible:ring-destructive shake"
-                        : "focus-visible:ring-primary/20 focus-visible:border-primary"
-                    }`}
-                    aria-describedby={errors.email ? "email-error" : undefined}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <div className="grid gap-4">
+                  {authError && (
+                    <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+                      <p className="text-sm text-destructive">{authError}</p>
+                    </div>
+                  )}
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="name@example.com"
+                            type="email"
+                            autoComplete="email"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            disabled={isLoading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.email && (
-                    <p
-                      id="email-error"
-                      className="text-xs text-destructive flex items-center gap-1 animate-fadeIn"
-                    >
-                      <span className="flex w-4 h-4 rounded-full bg-destructive/10 items-center justify-center text-destructive text-xs">
-                        !
-                      </span>
-                      {errors.email.message}
-                    </p>
-                  )}
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Password</FormLabel>
+                          <Link
+                            to="/"
+                            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            Forgot password?
+                          </Link>
+                        </div>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              placeholder="Enter your password"
+                              type={showPassword ? "text" : "password"}
+                              autoComplete="current-password"
+                              disabled={isLoading}
+                              className="pr-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                              disabled={isLoading}
+                              aria-label={
+                                showPassword ? "Hide password" : "Show password"
+                              }
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-medium"
+                  >
+                    {isLoading && (
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                    )}
+                    {isLoading ? "Signing in..." : "Sign In"}
+                  </Button>
                 </div>
-                <div className="grid gap-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-sm font-medium">
-                      Password
-                    </Label>
-                    <Link
-                      to="/forgot-password"
-                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      disabled={isLoading}
-                      placeholder="Enter your password"
-                      {...register("password")}
-                      className={`pr-10 transition-all duration-200 ${
-                        errors.password
-                          ? "border-destructive focus-visible:ring-destructive shake"
-                          : "focus-visible:ring-primary/20 focus-visible:border-primary"
-                      }`}
-                      aria-describedby={
-                        errors.password ? "password-error" : undefined
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      disabled={isLoading}
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p
-                      id="password-error"
-                      className="text-xs text-destructive flex items-center gap-1 animate-fadeIn"
-                    >
-                      <span className="flex w-4 h-4 rounded-full bg-destructive/10 items-center justify-center text-destructive text-xs">
-                        !
-                      </span>
-                      {errors.password.message}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  disabled={isLoading}
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-medium"
-                >
-                  {isLoading && (
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  )}
-                  {isLoading ? "Signing in..." : "Sign In"}
-                </Button>
-              </div>
-            </form>
+              </form>
+            </Form>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
