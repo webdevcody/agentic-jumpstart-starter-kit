@@ -1,4 +1,11 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  integer,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -59,3 +66,40 @@ export const verification = pgTable("verification", {
     () => /* @__PURE__ */ new Date()
   ),
 });
+
+export const video = pgTable("video", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  videoUrl: text("video_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  status: text("status")
+    .$default(() => "processing")
+    .notNull(),
+  duration: integer("duration"),
+  viewCount: integer("view_count")
+    .$default(() => 0)
+    .notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+});
+
+export const videoRelations = relations(video, ({ one }) => ({
+  user: one(user, {
+    fields: [video.userId],
+    references: [user.id],
+  }),
+}));
+
+export type Video = typeof video.$inferSelect;
+export type CreateVideoData = typeof video.$inferInsert;
+export type UpdateVideoData = Partial<
+  Omit<CreateVideoData, "id" | "createdAt">
+>;

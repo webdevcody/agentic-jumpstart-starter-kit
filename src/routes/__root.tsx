@@ -16,8 +16,10 @@ import appCss from "~/styles/app.css?url";
 import { seo } from "~/utils/seo";
 import { Header } from "~/components/Header";
 import { ThemeProvider } from "~/components/theme-provider";
+import { Toaster } from "~/components/ui/sonner";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
+import { Footer } from "~/components/Footer";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -161,9 +163,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <div className="min-h-screen bg-background">
             <Header />
             <main>{children}</main>
+            <Footer />
           </div>
           <TanStackRouterDevtools position="bottom-right" />
           <ReactQueryDevtools buttonPosition="bottom-left" />
+          <Toaster />
           <Scripts />
         </ThemeProvider>
       </body>

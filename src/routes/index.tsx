@@ -12,7 +12,6 @@ function Home() {
       <main className="flex-1">
         <Hero />
       </main>
-      <Footer />
     </div>
   );
 }
