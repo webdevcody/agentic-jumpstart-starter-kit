@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Claude Code hook script that extracts original user prompt and outputs completion notification
-# Extracts the first user prompt from the conversation and saves it to tmp.txt
+# Extracts the last user prompt from the conversation and saves it to tmp.txt
 
 # Attempt to source .labs for credentials (script dir, current dir, or $HOME)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -43,21 +43,11 @@ TRANSCRIPT_PATH=$(echo "$HOOK_DATA" | jq -r '.transcript_path')
 # Extract the actual user prompt from the JSONL transcript
 PROMPT=""
 if [[ -f "$TRANSCRIPT_PATH" ]]; then
-  # Read JSONL line by line and extract the first user message content
-  while IFS= read -r line; do
-    if [[ -n "$line" ]]; then
-      # Check if this is a user message
-      MSG_TYPE=$(echo "$line" | jq -r '.type // empty' 2>/dev/null)
-      if [[ "$MSG_TYPE" == "user" ]]; then
-        # Extract the actual message content
-        MSG_CONTENT=$(echo "$line" | jq -r '.message.content // empty' 2>/dev/null)
-        if [[ -n "$MSG_CONTENT" ]]; then
-          PROMPT="$MSG_CONTENT"
-          break
-        fi
-      fi
-    fi
-  done < "$TRANSCRIPT_PATH"
+  # Use jq to process the entire file and get the last user message
+  LAST_USER_MSG=$(cat "$TRANSCRIPT_PATH" | jq -s 'map(select(.type == "user" and .message.role == "user" and ((.message.content | type) == "string"))) | last | .message.content // empty' -r 2>/dev/null)
+  if [[ -n "$LAST_USER_MSG" ]]; then
+    PROMPT="$LAST_USER_MSG"
+  fi
 fi
 
 # Fallback to prompt from hook data if transcript parsing fails
@@ -73,6 +63,10 @@ for cmd in curl jq; do
   fi
 done
 
+echo "$TRANSCRIPT_PATH" > out.txt
+
+echo "$PROMPT" > original.txt
+
 # Convert PROMPT to a simple sentence using GPT-4
 SIMPLE_MESSAGE="$PROMPT"
 if [[ -n "$OPENAI_KEY" && -n "$PROMPT" ]]; then
@@ -85,17 +79,16 @@ if [[ -n "$OPENAI_KEY" && -n "$PROMPT" ]]; then
       messages: [
         {
           role: "system",
-          content: "Given a users prompt, pretend you need to give it a feature title or short 3-5 words to describe the work. Return only the title, nothing else."
+          content: "summarize the user prompt into a single feature name or short 3-5 words"
         },
         {
           role: "user",
-          content: ("Convert this prompt to a simple sentence: " + $prompt)
+          content: ("" + $prompt)
         }
       ],
-      temperature: 0.3,
-      max_tokens: 100
+      temperature: 0.3
     }')
-
+    
   OPENAI_RESP=$(curl -sS -f -X POST "https://api.openai.com/v1/chat/completions" \
     -H "Authorization: Bearer ${OPENAI_KEY}" \
     -H "Content-Type: application/json" \
@@ -113,6 +106,7 @@ if [[ -n "$OPENAI_KEY" && -n "$PROMPT" ]]; then
     echo "Warning: OpenAI request failed; using original prompt." >&2
   fi
 fi
+
 
 # Play the message via ElevenLabs TTS if credentials are available
 if [[ -n "$ELEVENLABS_API_KEY" && -n "$ELEVENLABS_VOICE_ID" ]]; then
