@@ -26,10 +26,14 @@ type SignUpForm = z.infer<typeof signUpSchema>;
 
 export const Route = createFileRoute("/sign-up")({
   component: RouteComponent,
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: search.redirect as string | undefined,
+  }),
 });
 
 function RouteComponent() {
   const router = useRouter();
+  const { redirect } = Route.useSearch();
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -57,7 +61,12 @@ function RouteComponent() {
       if (result.error) {
         setAuthError(result.error.message || "Sign up failed");
       } else {
-        router.navigate({ to: "/" });
+        // Redirect to the specified URL or default to home
+        if (redirect) {
+          window.location.href = redirect;
+        } else {
+          router.navigate({ to: "/" });
+        }
       }
     } catch (err) {
       setAuthError("An unexpected error occurred");

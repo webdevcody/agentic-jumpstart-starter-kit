@@ -1,8 +1,8 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { z } from "zod";
 import { getCookie, setCookie } from "@tanstack/react-start/server";
+import { useThemeQuery, useSetTheme } from "~/hooks/useTheme";
 
 type Theme = "dark" | "light" | "system";
 
@@ -36,10 +36,8 @@ export const setThemeFn = createServerFn({ method: "POST" })
   });
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  const themeQuery = useSuspenseQuery({
-    queryKey: ["theme"],
-    queryFn: () => getThemeFn(),
-  });
+  const themeQuery = useThemeQuery();
+  const setThemeMutation = useSetTheme();
 
   useEffect(() => {
     window
@@ -77,8 +75,10 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     theme: themeQuery.data as Theme,
     setTheme: (theme: Theme) => {
       console.log("setting theme", theme);
-      setThemeFn({ data: { theme } }).then(() => {
-        themeQuery.refetch();
+      setThemeMutation.mutate({ data: { theme } }, {
+        onSuccess: () => {
+          themeQuery.refetch();
+        },
       });
     },
   };

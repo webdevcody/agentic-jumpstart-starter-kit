@@ -1,16 +1,23 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Upload as UploadIcon, Video } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Music, Upload as UploadIcon, Image, Loader2, Home } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
-import { createVideoFn } from "~/fn/videos";
-import { getErrorMessage } from "~/utils/error";
+import { useCreateSong } from "~/hooks/useSongs";
 import { Page } from "~/components/Page";
 import { PageTitle } from "~/components/PageTitle";
 import { Button } from "~/components/ui/button";
+import { AppBreadcrumb } from "~/components/AppBreadcrumb";
 import { Input } from "~/components/ui/input";
+import { FileUpload } from "~/components/ui/file-upload";
+import { getAudioUrlFn, getCoverImageUrlFn } from "~/fn/audio-storage";
+import {
+  uploadAudioWithPresignedUrl,
+  uploadCoverImageWithPresignedUrl,
+  UploadProgress,
+} from "~/utils/storage/audio-helpers";
 import {
   Form,
   FormControl,
@@ -25,122 +32,400 @@ export const Route = createFileRoute("/upload")({
   component: Upload,
 });
 
-// Schema Definition Following Form Patterns - Based on Video Table Schema
+// Updated Schema for File Upload
 const uploadSchema = z.object({
   title: z
     .string()
-    .min(3, "Video title must be at least 3 characters")
-    .max(100, "Video title must be less than 100 characters"),
+    .min(2, "Song title must be at least 2 characters")
+    .max(100, "Song title must be less than 100 characters"),
+  artist: z
+    .string()
+    .min(1, "Artist name is required")
+    .max(50, "Artist name must be less than 50 characters"),
+  album: z
+    .string()
+    .max(100, "Album name must be less than 100 characters")
+    .optional()
+    .or(z.literal("")),
+  genre: z
+    .string()
+    .max(50, "Genre must be less than 50 characters")
+    .optional()
+    .or(z.literal("")),
   description: z
     .string()
     .max(500, "Description must be less than 500 characters")
     .optional()
     .or(z.literal("")),
-  videoUrl: z
-    .url("Please enter a valid video URL")
-    .min(1, "Video URL is required"),
-  thumbnailUrl: z
-    .url("Please enter a valid thumbnail URL")
-    .optional()
-    .or(z.literal("")),
-  status: z
-    .enum(["processing", "published", "private", "unlisted"])
-    .default("processing"),
-  duration: z
-    .number()
-    .int("Duration must be a whole number")
-    .min(1, "Duration must be at least 1 second")
-    .optional(),
+  status: z.enum(["processing", "published", "private", "unlisted"]),
 });
 
 type UploadFormData = z.infer<typeof uploadSchema>;
 
-function Upload() {
-  const navigate = useNavigate();
+interface UploadState {
+  audioFile: File | null;
+  coverImageFile: File | null;
+  audioProgress: number;
+  coverProgress: number;
+  isUploading: boolean;
+  audioKey: string | null;
+  coverKey: string | null;
+  songId: string | null;
+  duration: number | null;
+}
 
-  // Form Setup with Zod Resolver Following Form Patterns
+function Upload() {
+  const [uploadState, setUploadState] = useState<UploadState>({
+    audioFile: null,
+    coverImageFile: null,
+    audioProgress: 0,
+    coverProgress: 0,
+    isUploading: false,
+    audioKey: null,
+    coverKey: null,
+    songId: null,
+    duration: null,
+  });
+
+  // Form Setup with Zod Resolver
   const form = useForm<UploadFormData>({
     resolver: zodResolver(uploadSchema),
     defaultValues: {
       title: "",
+      artist: "",
+      album: "",
+      genre: "",
       description: "",
-      videoUrl: "",
-      thumbnailUrl: "",
-      status: "processing",
-      duration: undefined,
+      status: "published" as const,
     },
   });
 
-  const createVideoMutation = useMutation({
-    mutationFn: (data: UploadFormData) => createVideoFn({ data }),
-    onSuccess: (video) => {
-      toast.success("Video created successfully!", {
-        description: "Your video has been saved and is ready for publishing.",
-      });
-      form.reset();
-      navigate({ to: `/video/${video.id}` });
-    },
-    onError: (error) => {
-      toast.error("Failed to create video", {
-        description: getErrorMessage(error),
-      });
-    },
-  });
+  const createSongMutation = useCreateSong();
 
-  const formatDuration = (seconds: string) => {
-    const num = parseInt(seconds);
-    if (isNaN(num)) return "";
-    const minutes = Math.floor(num / 60);
-    const remainingSeconds = num % 60;
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  // Submit Handler Following Form Patterns
-  const onSubmit = (data: UploadFormData) => {
-    createVideoMutation.mutate(data);
+  const handleAudioFileSelect = useCallback((files: File[]) => {
+    if (files.length > 0) {
+      setUploadState(prev => ({
+        ...prev,
+        audioFile: files[0],
+      }));
+    }
+  }, []);
+
+  const handleCoverImageSelect = useCallback((files: File[]) => {
+    if (files.length > 0) {
+      setUploadState(prev => ({
+        ...prev,
+        coverImageFile: files[0],
+      }));
+    }
+  }, []);
+
+  const uploadFiles = async () => {
+    if (!uploadState.audioFile) {
+      toast.error("Please select an audio file");
+      return null;
+    }
+
+    setUploadState(prev => ({ ...prev, isUploading: true }));
+
+    try {
+      // Upload audio file
+      const audioResult = await uploadAudioWithPresignedUrl(
+        uploadState.audioFile,
+        (progress: UploadProgress) => {
+          setUploadState(prev => ({
+            ...prev,
+            audioProgress: progress.percentage,
+          }));
+        }
+      );
+
+      setUploadState(prev => ({
+        ...prev,
+        audioKey: audioResult.audioKey,
+        songId: audioResult.songId,
+        duration: audioResult.durationSeconds,
+      }));
+
+      let coverKey: string | null = null;
+
+      // Upload cover image if provided
+      if (uploadState.coverImageFile) {
+        const coverResult = await uploadCoverImageWithPresignedUrl(
+          audioResult.songId,
+          uploadState.coverImageFile,
+          (progress: UploadProgress) => {
+            setUploadState(prev => ({
+              ...prev,
+              coverProgress: progress.percentage,
+            }));
+          }
+        );
+        coverKey = coverResult.coverKey;
+        setUploadState(prev => ({ ...prev, coverKey }));
+      }
+
+      return {
+        audioKey: audioResult.audioKey,
+        coverImageKey: coverKey,
+        duration: audioResult.durationSeconds,
+        songId: audioResult.songId,
+      };
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error("Failed to upload files");
+      return null;
+    } finally {
+      setUploadState(prev => ({ ...prev, isUploading: false }));
+    }
   };
+
+  const onSubmit = async (data: UploadFormData) => {
+    const uploadResult = await uploadFiles();
+    if (!uploadResult) return;
+
+    createSongMutation.mutate({
+      ...data,
+      audioKey: uploadResult.audioKey,
+      coverImageKey: uploadResult.coverImageKey,
+      duration: uploadResult.duration,
+    }, {
+      onSuccess: () => {
+        form.reset();
+        setUploadState({
+          audioFile: null,
+          coverImageFile: null,
+          audioProgress: 0,
+          coverProgress: 0,
+          isUploading: false,
+          audioKey: null,
+          coverKey: null,
+          songId: null,
+          duration: null,
+        });
+      },
+    });
+  };
+
+  const isFormDisabled = createSongMutation.isPending || uploadState.isUploading;
 
   return (
     <Page>
       <div className="space-y-8">
+        <AppBreadcrumb items={[
+          { label: "Home", href: "/", icon: Home },
+          { label: "Upload" }
+        ]} />
         <PageTitle
-          title="Upload Video"
-          description="Share your content with the community"
+          title="Upload Song"
+          description="Share your music with the community"
           center
         />
 
-        <div className="max-w-2xl mx-auto">
-          {/* Enhanced Form */}
+        <div className="max-w-3xl mx-auto">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="mt-8 space-y-6"
+              className="mt-8 space-y-8"
             >
-              <div className="grid gap-6">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-medium">
-                        Video Title *
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter a compelling title for your video"
-                          className="h-11 text-base"
-                          autoComplete="off"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        A good title helps viewers find and understand your
-                        content.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
+              {/* File Upload Sections */}
+              <div className="grid gap-8 lg:grid-cols-2">
+                {/* Audio Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Music className="h-5 w-5" />
+                        Audio File *
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Upload your music file (MP3, WAV, FLAC, etc.)
+                      </p>
+                    </div>
+                    {uploadState.audioFile && !uploadState.isUploading && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium">Ready</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <FileUpload
+                    onFilesSelected={handleAudioFileSelect}
+                    accept={{
+                      'audio/*': ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
+                    }}
+                    maxSize={100 * 1024 * 1024} // 100MB
+                    disabled={isFormDisabled}
+                  />
+
+                  {uploadState.isUploading && uploadState.audioProgress > 0 && (
+                    <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Uploading audio...</span>
+                        </div>
+                        <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{uploadState.audioProgress}%</span>
+                      </div>
+                      <div className="w-full bg-blue-100 dark:bg-blue-900/50 rounded-full h-3">
+                        <div 
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2" 
+                          style={{ width: `${uploadState.audioProgress}%` }}
+                        >
+                          <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                />
+                </div>
+
+                {/* Cover Image Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Image className="h-5 w-5" />
+                        Cover Image
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Upload album artwork or cover image (optional)
+                      </p>
+                    </div>
+                    {uploadState.coverImageFile && !uploadState.isUploading && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium">Ready</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <FileUpload
+                    onFilesSelected={handleCoverImageSelect}
+                    accept={{
+                      'image/*': ['.jpg', '.jpeg', '.png', '.webp']
+                    }}
+                    maxSize={10 * 1024 * 1024} // 10MB
+                    disabled={isFormDisabled}
+                  />
+
+                  {uploadState.isUploading && uploadState.coverProgress > 0 && (
+                    <div className="space-y-3 p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Uploading cover...</span>
+                        </div>
+                        <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{uploadState.coverProgress}%</span>
+                      </div>
+                      <div className="w-full bg-purple-100 dark:bg-purple-900/50 rounded-full h-3">
+                        <div 
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2" 
+                          style={{ width: `${uploadState.coverProgress}%` }}
+                        >
+                          <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Metadata Form */}
+              <div className="grid gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">
+                          Song Title *
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter song title"
+                            className="h-11 text-base"
+                            disabled={isFormDisabled}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="artist"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">
+                          Artist Name *
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter artist name"
+                            className="h-11 text-base"
+                            disabled={isFormDisabled}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="album"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">
+                          Album
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter album name (optional)"
+                            className="h-11 text-base"
+                            disabled={isFormDisabled}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="genre"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">
+                          Genre
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter genre (optional)"
+                            className="h-11 text-base"
+                            disabled={isFormDisabled}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
@@ -153,13 +438,13 @@ function Upload() {
                       <FormControl>
                         <textarea
                           className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                          placeholder="Tell viewers what your video is about, what they'll learn, or what makes it interesting..."
+                          placeholder="Tell listeners about your song..."
+                          disabled={isFormDisabled}
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        Help viewers understand what your video is about.{" "}
-                        {field.value?.length || 0}/500 characters.
+                        {field.value?.length || 0}/500 characters
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -168,134 +453,86 @@ function Upload() {
 
                 <FormField
                   control={form.control}
-                  name="videoUrl"
+                  name="status"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-base font-medium">
-                        Video URL *
+                        Visibility *
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="https://example.com/video.mp4"
-                          className="h-11 text-base"
-                          type="url"
+                        <select
+                          className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={isFormDisabled}
                           {...field}
-                        />
+                        >
+                          <option value="published">Public</option>
+                          <option value="unlisted">Unlisted</option>
+                          <option value="private">Private</option>
+                        </select>
                       </FormControl>
                       <FormDescription>
-                        Direct link to your video file (MP4, WebM, etc.).
+                        Control who can listen to your song
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="thumbnailUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-medium">
-                        Thumbnail URL
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/thumbnail.jpg"
-                          className="h-11 text-base"
-                          type="url"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Optional thumbnail image for your video.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-base font-medium">
-                          Video Status *
-                        </FormLabel>
-                        <FormControl>
-                          <select
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            {...field}
-                          >
-                            <option value="processing">Processing</option>
-                            <option value="published">Published</option>
-                            <option value="private">Private</option>
-                            <option value="unlisted">Unlisted</option>
-                          </select>
-                        </FormControl>
-                        <FormDescription>
-                          Control who can see your video.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="duration"
-                    render={({ field: { onChange, value, ...field } }) => (
-                      <FormItem>
-                        <FormLabel className="text-base font-medium">
-                          Duration (seconds)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="300"
-                            className="h-11 text-base"
-                            type="number"
-                            min="1"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              onChange(val === "" ? undefined : parseInt(val));
-                            }}
-                            value={value || ""}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {value
-                            ? `Duration: ${formatDuration(value.toString())}`
-                            : "Video length in seconds (optional)."}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {uploadState.duration && (
+                  <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                        <Music className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                          Audio processed successfully
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          Duration: {formatDuration(uploadState.duration)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Enhanced Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-border">
-                {/* Submit Buttons - Keep Enabled Following Updated Form Patterns */}
+              {/* Submit Button */}
+              <div className="flex flex-col gap-4 pt-6 border-t border-border">
                 <Button
                   type="submit"
-                  className="flex-1 h-11 text-base font-medium"
-                  disabled={createVideoMutation.isPending}
+                  className="w-full h-12 text-base font-medium"
+                  disabled={isFormDisabled || !uploadState.audioFile}
                 >
-                  {createVideoMutation.isPending && (
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  )}
-                  {createVideoMutation.isPending ? (
-                    "Creating Video..."
+                  {uploadState.isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading Files...
+                    </>
+                  ) : createSongMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating Song...
+                    </>
                   ) : (
                     <>
-                      <Video className="h-4 w-4 mr-2" />
-                      Create Video
+                      <UploadIcon className="h-4 w-4 mr-2" />
+                      Upload Song
                     </>
                   )}
                 </Button>
+                
+                {!uploadState.audioFile ? (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <Music className="h-4 w-4" />
+                    <p className="text-sm">Please select an audio file to continue</p>
+                  </div>
+                ) : uploadState.audioFile && !uploadState.isUploading && !createSongMutation.isPending && (
+                  <div className="flex items-center justify-center gap-2 text-green-600">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <p className="text-sm font-medium">Ready to upload your song!</p>
+                  </div>
+                )}
               </div>
             </form>
           </Form>

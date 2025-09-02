@@ -14,10 +14,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as MySongsRouteImport } from './routes/my-songs'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VideoIdRouteImport } from './routes/video/$id'
+import { Route as SongIdIndexRouteImport } from './routes/song/$id/index'
+import { Route as SongIdEditRouteImport } from './routes/song/$id/edit'
+import { ServerRoute as ApiStripeWebhookServerRouteImport } from './routes/api/stripe/webhook'
 import { ServerRoute as ApiAuthSplatServerRouteImport } from './routes/api/auth/$'
 
 const rootServerRouteImport = createServerRootRoute()
@@ -37,9 +40,14 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MySongsRoute = MySongsRouteImport.update({
+  id: '/my-songs',
+  path: '/my-songs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrowseRoute = BrowseRouteImport.update({
@@ -52,10 +60,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VideoIdRoute = VideoIdRouteImport.update({
-  id: '/video/$id',
-  path: '/video/$id',
+const SongIdIndexRoute = SongIdIndexRouteImport.update({
+  id: '/song/$id/',
+  path: '/song/$id/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SongIdEditRoute = SongIdEditRouteImport.update({
+  id: '/song/$id/edit',
+  path: '/song/$id/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeWebhookServerRoute = ApiStripeWebhookServerRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootServerRouteImport,
 } as any)
 const ApiAuthSplatServerRoute = ApiAuthSplatServerRouteImport.update({
   id: '/api/auth/$',
@@ -66,90 +84,108 @@ const ApiAuthSplatServerRoute = ApiAuthSplatServerRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
-  '/dashboard': typeof DashboardRoute
+  '/my-songs': typeof MySongsRoute
+  '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/upload': typeof UploadRoute
-  '/video/$id': typeof VideoIdRoute
+  '/song/$id/edit': typeof SongIdEditRoute
+  '/song/$id': typeof SongIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
-  '/dashboard': typeof DashboardRoute
+  '/my-songs': typeof MySongsRoute
+  '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/upload': typeof UploadRoute
-  '/video/$id': typeof VideoIdRoute
+  '/song/$id/edit': typeof SongIdEditRoute
+  '/song/$id': typeof SongIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
-  '/dashboard': typeof DashboardRoute
+  '/my-songs': typeof MySongsRoute
+  '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/upload': typeof UploadRoute
-  '/video/$id': typeof VideoIdRoute
+  '/song/$id/edit': typeof SongIdEditRoute
+  '/song/$id/': typeof SongIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/browse'
-    | '/dashboard'
+    | '/my-songs'
+    | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/upload'
-    | '/video/$id'
+    | '/song/$id/edit'
+    | '/song/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/browse'
-    | '/dashboard'
+    | '/my-songs'
+    | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/upload'
-    | '/video/$id'
+    | '/song/$id/edit'
+    | '/song/$id'
   id:
     | '__root__'
     | '/'
     | '/browse'
-    | '/dashboard'
+    | '/my-songs'
+    | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/upload'
-    | '/video/$id'
+    | '/song/$id/edit'
+    | '/song/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrowseRoute: typeof BrowseRoute
-  DashboardRoute: typeof DashboardRoute
+  MySongsRoute: typeof MySongsRoute
+  SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   UploadRoute: typeof UploadRoute
-  VideoIdRoute: typeof VideoIdRoute
+  SongIdEditRoute: typeof SongIdEditRoute
+  SongIdIndexRoute: typeof SongIdIndexRoute
 }
 export interface FileServerRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatServerRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookServerRoute
 }
 export interface FileServerRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatServerRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookServerRoute
 }
 export interface FileServerRoutesById {
   __root__: typeof rootServerRouteImport
   '/api/auth/$': typeof ApiAuthSplatServerRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookServerRoute
 }
 export interface FileServerRouteTypes {
   fileServerRoutesByFullPath: FileServerRoutesByFullPath
-  fullPaths: '/api/auth/$'
+  fullPaths: '/api/auth/$' | '/api/stripe/webhook'
   fileServerRoutesByTo: FileServerRoutesByTo
-  to: '/api/auth/$'
-  id: '__root__' | '/api/auth/$'
+  to: '/api/auth/$' | '/api/stripe/webhook'
+  id: '__root__' | '/api/auth/$' | '/api/stripe/webhook'
   fileServerRoutesById: FileServerRoutesById
 }
 export interface RootServerRouteChildren {
   ApiAuthSplatServerRoute: typeof ApiAuthSplatServerRoute
+  ApiStripeWebhookServerRoute: typeof ApiStripeWebhookServerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -175,11 +211,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-songs': {
+      id: '/my-songs'
+      path: '/my-songs'
+      fullPath: '/my-songs'
+      preLoaderRoute: typeof MySongsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/browse': {
@@ -196,17 +239,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/video/$id': {
-      id: '/video/$id'
-      path: '/video/$id'
-      fullPath: '/video/$id'
-      preLoaderRoute: typeof VideoIdRouteImport
+    '/song/$id/': {
+      id: '/song/$id/'
+      path: '/song/$id'
+      fullPath: '/song/$id'
+      preLoaderRoute: typeof SongIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/song/$id/edit': {
+      id: '/song/$id/edit'
+      path: '/song/$id/edit'
+      fullPath: '/song/$id/edit'
+      preLoaderRoute: typeof SongIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 declare module '@tanstack/react-start/server' {
   interface ServerFileRoutesByPath {
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookServerRouteImport
+      parentRoute: typeof rootServerRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -220,17 +277,20 @@ declare module '@tanstack/react-start/server' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrowseRoute: BrowseRoute,
-  DashboardRoute: DashboardRoute,
+  MySongsRoute: MySongsRoute,
+  SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   UploadRoute: UploadRoute,
-  VideoIdRoute: VideoIdRoute,
+  SongIdEditRoute: SongIdEditRoute,
+  SongIdIndexRoute: SongIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 const rootServerRouteChildren: RootServerRouteChildren = {
   ApiAuthSplatServerRoute: ApiAuthSplatServerRoute,
+  ApiStripeWebhookServerRoute: ApiStripeWebhookServerRoute,
 }
 export const serverRouteTree = rootServerRouteImport
   ._addFileChildren(rootServerRouteChildren)

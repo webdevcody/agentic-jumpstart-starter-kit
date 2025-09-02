@@ -15,6 +15,27 @@
       "when": 1755655181383,
       "tag": "0001_redundant_joseph",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756819515143,
+      "tag": "0002_equal_micromax",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756836639703,
+      "tag": "0003_glossy_boomerang",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1756852543588,
+      "tag": "0004_glamorous_hex",
+      "breakpoints": true
     }
   ]
 }

@@ -33,10 +33,14 @@ type SignInForm = z.infer<typeof signInSchema>;
 
 export const Route = createFileRoute("/sign-in")({
   component: RouteComponent,
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: search.redirect as string | undefined,
+  }),
 });
 
 function RouteComponent() {
   const router = useRouter();
+  const { redirect } = Route.useSearch();
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -93,7 +97,12 @@ function RouteComponent() {
         },
         {
           onSuccess: () => {
-            router.navigate({ to: "/" });
+            // Redirect to the specified URL or default to home
+            if (redirect) {
+              window.location.href = redirect;
+            } else {
+              router.navigate({ to: "/" });
+            }
           },
           onError: (error) => {
             setAuthError(error.error.message || "Invalid email or password");

@@ -15,6 +15,11 @@ export const user = pgTable("user", {
     .$defaultFn(() => false)
     .notNull(),
   image: text("image"),
+  stripeCustomerId: text("stripe_customer_id"),
+  subscriptionId: text("subscription_id"),
+  plan: text("plan").$default(() => "free").notNull(),
+  subscriptionStatus: text("subscription_status"),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
   createdAt: timestamp("created_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
@@ -67,17 +72,25 @@ export const verification = pgTable("verification", {
   ),
 });
 
-export const video = pgTable("video", {
+export const song = pgTable("song", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
+  artist: text("artist").notNull(),
+  album: text("album"),
+  genre: text("genre"),
   description: text("description"),
-  videoUrl: text("video_url").notNull(),
-  thumbnailUrl: text("thumbnail_url"),
+  audioUrl: text("audio_url").notNull(),
+  coverImageUrl: text("cover_image_url"),
+  audioKey: text("audio_key"),
+  coverImageKey: text("cover_image_key"),
   status: text("status")
     .$default(() => "processing")
     .notNull(),
   duration: integer("duration"),
-  viewCount: integer("view_count")
+  playCount: integer("play_count")
+    .$default(() => 0)
+    .notNull(),
+  downloadCount: integer("download_count")
     .$default(() => 0)
     .notNull(),
   userId: text("user_id")
@@ -91,15 +104,20 @@ export const video = pgTable("video", {
     .notNull(),
 });
 
-export const videoRelations = relations(video, ({ one }) => ({
+export const songRelations = relations(song, ({ one }) => ({
   user: one(user, {
-    fields: [video.userId],
+    fields: [song.userId],
     references: [user.id],
   }),
 }));
 
-export type Video = typeof video.$inferSelect;
-export type CreateVideoData = typeof video.$inferInsert;
-export type UpdateVideoData = Partial<
-  Omit<CreateVideoData, "id" | "createdAt">
+export type Song = typeof song.$inferSelect;
+export type CreateSongData = typeof song.$inferInsert;
+export type UpdateSongData = Partial<
+  Omit<CreateSongData, "id" | "createdAt">
 >;
+
+export type User = typeof user.$inferSelect;
+
+export type SubscriptionPlan = "free" | "basic" | "pro";
+export type SubscriptionStatus = "active" | "canceled" | "past_due" | "unpaid" | "incomplete";

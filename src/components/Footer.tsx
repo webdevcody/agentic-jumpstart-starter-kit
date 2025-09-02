@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Video } from "lucide-react";
+import { Music } from "lucide-react";
 
 export function Footer() {
   return (
@@ -126,11 +126,11 @@ export function Footer() {
         <div className="mt-8 pt-8 border-t">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center space-x-2">
-              <Video className="h-6 w-6" />
-              <span className="font-semibold">TechTube</span>
+              <Music className="h-6 w-6" />
+              <span className="font-semibold">SoundHub</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 TechTube. All rights reserved.
+              © 2025 SoundHub. All rights reserved.
             </p>
           </div>
         </div>
