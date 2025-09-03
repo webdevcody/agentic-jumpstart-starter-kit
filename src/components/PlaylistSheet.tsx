@@ -20,7 +20,7 @@ import { formatDuration } from "~/utils/song";
 import { EmptyState } from "~/components/EmptyState";
 import { usePlaylists, usePlaylistById, useRemoveSongFromPlaylist } from "~/hooks/usePlaylists";
 import { useAudioUrl, useCoverImageUrl } from "~/hooks/useAudioStorage";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 // Temporary imports for complex loading logic - to be refactored later
 import { getCoverImageUrlFn, getAudioUrlFn } from "~/fn/audio-storage";
 import { getPlaylistByIdFn } from "~/fn/playlists";
@@ -90,11 +90,8 @@ export function PlaylistSheet({ open, onOpenChange }: PlaylistSheetProps) {
 
       loadSavedPlaylist(playlistData.id, playlistData.name, playlistSongs);
 
-      if (playlistData.songs.length > 0) {
-        toast.success(`Loaded "${playlistData.name}" playlist`);
-      } else {
-        toast.info(`Loaded "${playlistData.name}" playlist (empty)`);
-      }
+      // Don't show toast for automatic playlist loading on app start
+      // Toast only shows for manual playlist selections
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to load playlist");

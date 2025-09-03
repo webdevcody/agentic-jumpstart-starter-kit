@@ -19,10 +19,7 @@ export function Hero() {
             </p>
           </div>
           <div className="flex flex-col gap-4 sm:flex-row">
-            <Button asChild size="lg" className="text-base">
-              <Link to="/sign-up">Start Creating Music</Link>
-            </Button>
-            <Button variant="outline" size="lg" className="text-base" asChild>
+            <Button size="lg" className="text-base" asChild>
               <Link to="/browse">
                 <Play className="mr-2 h-4 w-4" />
                 Discover Songs

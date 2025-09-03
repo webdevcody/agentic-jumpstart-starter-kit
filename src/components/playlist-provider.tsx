@@ -387,7 +387,7 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
       const validStartIndex = startIndex !== undefined && startIndex >= 0 && startIndex < songs.length ? startIndex : 0;
       setCurrentIndex(validStartIndex);
       setCurrentSong(songs[validStartIndex]);
-      setIsPlaying(true);
+      setIsPlaying(false); // Don't auto-play when loading a playlist
       setCurrentTime(0);
     } else {
       setCurrentIndex(-1);
