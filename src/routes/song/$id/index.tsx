@@ -9,6 +9,7 @@ import {
   Check,
   Home,
   Music,
+  Heart,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -21,6 +22,8 @@ import { getAudioUrlFn, getCoverImageUrlFn } from "~/fn/audio-storage";
 import { authClient } from "~/lib/auth-client";
 import { usePlaylist } from "~/components/playlist-provider";
 import { useSongBreadcrumbs } from "~/hooks/useSongBreadcrumbs";
+import { toggleHeartFn, getHeartStatusFn } from "~/fn/hearts";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/song/$id/")({
   loader: ({ context: { queryClient }, params: { id } }) => {
@@ -35,9 +38,33 @@ function SongDetail() {
   const [isDownloading, setIsDownloading] = useState(false);
   const { addToPlaylist, playlist } = usePlaylist();
   const breadcrumbItems = useSongBreadcrumbs(song?.title || "Song Details");
+  const queryClient = useQueryClient();
 
   // Get current user session to check if user can edit
   const { data: session } = authClient.useSession();
+
+  // Heart status query - only for authenticated users
+  const { data: heartStatus } = useQuery({
+    queryKey: ["heart-status", id],
+    queryFn: () => getHeartStatusFn({ data: { songId: id } }),
+    enabled: !!session?.user && !!song,
+  });
+
+  // Heart toggle mutation
+  const heartMutation = useMutation({
+    mutationFn: (songId: string) => toggleHeartFn({ data: { songId } }),
+    onSuccess: () => {
+      // Invalidate heart status query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["heart-status", id] });
+      toast.success(
+        heartStatus?.isHearted ? "Removed from favorites" : "Added to favorites"
+      );
+    },
+    onError: (error) => {
+      toast.error("Failed to update heart status");
+      console.error("Heart toggle error:", error);
+    },
+  });
 
   // Get presigned URLs from S3 keys
   const { data: audioUrlData } = useQuery({
@@ -87,7 +114,9 @@ function SongDetail() {
 
       // Cleanup
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      if (document.body.contains(a)) {
+        document.body.removeChild(a);
+      }
 
       toast.success("Download started successfully!");
     } catch (error) {
@@ -155,6 +184,14 @@ function SongDetail() {
     toast.success("Added to playlist");
   };
 
+  const handleHeartToggle = () => {
+    if (!session?.user) {
+      toast.error("Please log in to favorite songs");
+      return;
+    }
+    heartMutation.mutate(id);
+  };
+
   return (
     <Page>
       <div className="space-y-8">
@@ -198,6 +235,38 @@ function SongDetail() {
                   </>
                 )}
               </Button>
+              
+              {/* Heart Button - only show for authenticated users */}
+              {session?.user && (
+                <Button
+                  size="lg"
+                  onClick={handleHeartToggle}
+                  disabled={heartMutation.isPending}
+                  className="w-full"
+                  variant={heartStatus?.isHearted ? "default" : "outline"}
+                >
+                  {heartMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      {heartStatus?.isHearted ? "Removing..." : "Adding..."}
+                    </>
+                  ) : (
+                    <>
+                      <Heart 
+                        className={`h-5 w-5 mr-2 ${
+                          heartStatus?.isHearted ? "fill-current" : ""
+                        }`} 
+                      />
+                      {heartStatus?.isHearted ? "Hearted" : "Heart"}
+                      {heartStatus?.heartCount > 0 && (
+                        <span className="ml-2 text-sm">
+                          ({heartStatus.heartCount})
+                        </span>
+                      )}
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
 

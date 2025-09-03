@@ -10,6 +10,7 @@ import {
   AudioWaveform,
   List,
   Music,
+  ListMusic,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useUserAvatar } from "~/hooks/useUserAvatar";
@@ -102,6 +103,24 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
                     {link.title}
                   </Link>
                 ))}
+                {session && (
+                  <>
+                    <Link
+                      to="/my-songs"
+                      className="block px-2 py-1 text-lg transition-colors hover:text-foreground/80 text-foreground/60"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      My Songs
+                    </Link>
+                    <Link
+                      to="/playlists"
+                      className="block px-2 py-1 text-lg transition-colors hover:text-foreground/80 text-foreground/60"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      My Playlists
+                    </Link>
+                  </>
+                )}
               </nav>
             </div>
           </SheetContent>
@@ -174,6 +193,12 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
                       <Link to="/my-songs">
                         <Music className="mr-2 h-4 w-4" />
                         <span>My Songs</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/playlists">
+                        <ListMusic className="mr-2 h-4 w-4" />
+                        <span>My Playlists</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

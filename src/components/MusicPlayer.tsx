@@ -14,6 +14,8 @@ import {
 import { Button } from "~/components/ui/button";
 import { usePlaylist } from "~/components/playlist-provider";
 import { formatDuration } from "~/utils/song";
+import { useQuery } from "@tanstack/react-query";
+import { getCoverImageUrlFn } from "~/fn/audio-storage";
 
 interface MusicPlayerProps {
   onOpenPlaylist: () => void;
@@ -59,13 +61,12 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
   // Handle play/pause state
   useEffect(() => {
     if (!audioRef.current) return;
-
     if (isPlaying) {
       audioRef.current.play().catch(console.error);
     } else {
       audioRef.current.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, currentSong]);
 
   // Handle volume changes
   useEffect(() => {
@@ -158,6 +159,15 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
     hidePlayer();
   };
 
+  // Get the cover image URL from the coverImageKey - must be called before early return
+  const { data: coverUrlData } = useQuery({
+    queryKey: ['cover-url', currentSong?.coverImageKey || 'no-key'],
+    queryFn: () => {
+      if (!currentSong?.coverImageKey) return Promise.resolve(null);
+      return getCoverImageUrlFn({ data: { coverKey: currentSong.coverImageKey } });
+    },
+  });
+
   // Auto-show player when a new song starts playing
   useEffect(() => {
     if (currentSong && isPlaying && !isPlayerVisible) {
@@ -170,6 +180,7 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
     return null;
   }
 
+  const displayCoverUrl = coverUrlData?.coverUrl;
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
@@ -211,9 +222,9 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
             {/* Song info */}
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <div className="w-12 h-12 bg-muted rounded-md overflow-hidden flex-shrink-0">
-                {currentSong.coverImageUrl ? (
+                {displayCoverUrl ? (
                   <img
-                    src={currentSong.coverImageUrl}
+                    src={displayCoverUrl}
                     alt={`${currentSong.title} cover`}
                     className="w-full h-full object-cover"
                   />

@@ -18,15 +18,19 @@ export function SongCard({ song }: SongCardProps) {
   
   // Get the actual URLs from S3 keys
   const { data: audioUrlData } = useQuery({
-    queryKey: ['audio-url', song.audioKey],
-    queryFn: () => getAudioUrlFn({ data: { audioKey: song.audioKey! } }),
-    enabled: !!song.audioKey,
+    queryKey: ['audio-url', song.audioKey || 'no-key'],
+    queryFn: () => {
+      if (!song.audioKey) return Promise.resolve(null);
+      return getAudioUrlFn({ data: { audioKey: song.audioKey } });
+    },
   });
   
   const { data: coverUrlData } = useQuery({
-    queryKey: ['cover-url', song.coverImageKey],
-    queryFn: () => getCoverImageUrlFn({ data: { coverKey: song.coverImageKey! } }),
-    enabled: !!song.coverImageKey,
+    queryKey: ['cover-url', song.coverImageKey || 'no-key'],
+    queryFn: () => {
+      if (!song.coverImageKey) return Promise.resolve(null);
+      return getCoverImageUrlFn({ data: { coverKey: song.coverImageKey } });
+    },
   });
 
   const displayAudioUrl = audioUrlData?.audioUrl;

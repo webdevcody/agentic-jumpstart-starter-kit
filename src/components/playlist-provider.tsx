@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Song } from "~/db/schema";
 import type { SongWithUrls } from "~/data-access/songs";
+import { authClient } from "~/lib/auth-client";
+import { getLastPlaylistFn, getPlaylistByIdFn } from "~/fn/playlists";
+import { getAudioUrlFn, getCoverImageUrlFn } from "~/fn/audio-storage";
 
 export interface PlaylistSong extends Song {
   audioUrl?: string;
@@ -32,8 +35,13 @@ type PlaylistState = {
   isShuffling: boolean;
   isPlayerVisible: boolean;
   hasEverUsedPlayer: boolean;
+  currentPlaylistId: string | null; // ID of the saved playlist currently loaded
+  currentPlaylistName: string | null; // Name of the saved playlist currently loaded
+  selectedPlaylistId: string | null; // ID of the user's selected playlist for database operations
+  isAuthenticated: boolean;
   // Actions
   addToPlaylist: (song: PlaylistSong) => void;
+  setSelectedPlaylist: (playlistId: string | null, playlistName: string | null) => void;
   removeFromPlaylist: (songId: string) => void;
   clearPlaylist: () => void;
   playSong: (song: PlaylistSong, index?: number) => void;
@@ -48,10 +56,11 @@ type PlaylistState = {
   toggleShuffle: () => void;
   showPlayer: () => void;
   hidePlayer: () => void;
+  loadSavedPlaylist: (playlistId: string, playlistName: string, songs: PlaylistSong[]) => void;
 };
 
-const PLAYLIST_STORAGE_KEY = "music-playlist";
 const PLAYLIST_SETTINGS_KEY = "music-playlist-settings";
+const PLAYLIST_STATE_KEY = "music-playlist-state";
 
 const initialState: PlaylistState = {
   playlist: [],
@@ -65,8 +74,13 @@ const initialState: PlaylistState = {
   isShuffling: false,
   isPlayerVisible: true,
   hasEverUsedPlayer: false,
+  currentPlaylistId: null,
+  currentPlaylistName: null,
+  selectedPlaylistId: null,
+  isAuthenticated: false,
   // Actions - these will be overridden by the provider
   addToPlaylist: () => null,
+  setSelectedPlaylist: () => null,
   removeFromPlaylist: () => null,
   clearPlaylist: () => null,
   playSong: () => null,
@@ -81,6 +95,7 @@ const initialState: PlaylistState = {
   toggleShuffle: () => null,
   showPlayer: () => null,
   hidePlayer: () => null,
+  loadSavedPlaylist: () => null,
 };
 
 const PlaylistContext = createContext<PlaylistState>(initialState);
@@ -97,22 +112,18 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
   const [isShuffling, setIsShuffling] = useState(false);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasEverUsedPlayer, setHasEverUsedPlayer] = useState(false);
+  const [currentPlaylistId, setCurrentPlaylistId] = useState<string | null>(null);
+  const [currentPlaylistName, setCurrentPlaylistName] = useState<string | null>(null);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
 
-  // Load playlist from localStorage on mount
+  // Get authentication status
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = !!session?.user;
+
+  // Load settings from localStorage on mount
   useEffect(() => {
     try {
-      const savedPlaylist = localStorage.getItem(PLAYLIST_STORAGE_KEY);
       const savedSettings = localStorage.getItem(PLAYLIST_SETTINGS_KEY);
-      
-      if (savedPlaylist) {
-        const parsedPlaylist = JSON.parse(savedPlaylist);
-        setPlaylist(parsedPlaylist.songs || []);
-        setCurrentIndex(parsedPlaylist.currentIndex || -1);
-        
-        if (parsedPlaylist.currentIndex >= 0 && parsedPlaylist.songs[parsedPlaylist.currentIndex]) {
-          setCurrentSong(parsedPlaylist.songs[parsedPlaylist.currentIndex]);
-        }
-      }
       
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
@@ -122,21 +133,34 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
         setHasEverUsedPlayer(parsedSettings.hasEverUsedPlayer || false);
       }
     } catch (error) {
-      console.error("Failed to load playlist from localStorage:", error);
+      console.error("Failed to load settings from localStorage:", error);
     }
   }, []);
 
-  // Save playlist to localStorage when it changes
+  // Load playlist state from localStorage on mount (authenticated users only)
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     try {
-      localStorage.setItem(PLAYLIST_STORAGE_KEY, JSON.stringify({
-        songs: playlist,
-        currentIndex,
-      }));
+      const savedState = localStorage.getItem(PLAYLIST_STATE_KEY);
+      
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        if (parsedState.selectedPlaylistId && parsedState.selectedPlaylistName) {
+          setSelectedPlaylistId(parsedState.selectedPlaylistId);
+          
+          // Optionally restore current song info (we'll implement playlist loading separately)
+          if (parsedState.currentSong) {
+            setCurrentSong(parsedState.currentSong);
+          }
+        }
+      }
     } catch (error) {
-      console.error("Failed to save playlist to localStorage:", error);
+      console.error("Failed to load playlist state from localStorage:", error);
     }
-  }, [playlist, currentIndex]);
+  }, [isAuthenticated]);
+
+  // Note: Playlists are now fully server-side, no localStorage persistence
 
   // Save settings when they change
   useEffect(() => {
@@ -152,9 +176,128 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
     }
   }, [volume, isLooping, isShuffling, hasEverUsedPlayer]);
 
+  // Save playlist state to localStorage when it changes (authenticated users only)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const playlistState = {
+        selectedPlaylistId,
+        currentSong,
+        currentPlaylistId,
+        currentPlaylistName,
+      };
+      
+      localStorage.setItem(PLAYLIST_STATE_KEY, JSON.stringify(playlistState));
+    } catch (error) {
+      console.error("Failed to save playlist state to localStorage:", error);
+    }
+  }, [isAuthenticated, selectedPlaylistId, currentSong, currentPlaylistId, currentPlaylistName]);
+
+  // Restore playlist on authentication (after localStorage state is loaded)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    // Only run restoration once per session to avoid constant reloading
+    const sessionKey = `playlist-restored-${session?.user?.id}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    const restorePlaylist = async () => {
+      try {
+        let playlistToRestore = null;
+        
+        // First, check if we have a saved playlist in localStorage
+        const savedState = localStorage.getItem(PLAYLIST_STATE_KEY);
+        if (savedState) {
+          const parsedState = JSON.parse(savedState);
+          if (parsedState.selectedPlaylistId) {
+            try {
+              // Try to load the saved playlist
+              const savedPlaylist = await getPlaylistByIdFn({ data: { id: parsedState.selectedPlaylistId } });
+              playlistToRestore = savedPlaylist;
+            } catch (error) {
+              console.warn("Failed to load saved playlist, falling back to latest:", error);
+              // Clear invalid playlist from localStorage
+              localStorage.removeItem(PLAYLIST_STATE_KEY);
+            }
+          }
+        }
+        
+        // If no saved playlist or failed to load, get the most recent playlist
+        if (!playlistToRestore) {
+          playlistToRestore = await getLastPlaylistFn();
+        }
+        
+        // If we found a playlist to restore, load it
+        if (playlistToRestore) {
+          // Set as selected playlist for future song additions
+          setSelectedPlaylistId(playlistToRestore.id);
+          
+          if (playlistToRestore.songs.length > 0) {
+            // Convert songs to PlaylistSong format with URLs
+            const playlistSongs = await Promise.all(
+              playlistToRestore.songs.map(async (song) => {
+                const [audioUrlResult, coverUrlResult] = await Promise.all([
+                  song.audioKey ? getAudioUrlFn({ data: { audioKey: song.audioKey } }) : Promise.resolve(null),
+                  song.coverImageKey ? getCoverImageUrlFn({ data: { coverKey: song.coverImageKey } }) : Promise.resolve(null),
+                ]);
+
+                return toPlaylistSong({
+                  ...song,
+                  audioUrl: audioUrlResult?.audioUrl || "",
+                  coverImageUrl: coverUrlResult?.coverUrl || undefined,
+                });
+              })
+            );
+
+            // Load the playlist without auto-playing
+            setPlaylist(playlistSongs);
+            setCurrentPlaylistId(playlistToRestore.id);
+            setCurrentPlaylistName(playlistToRestore.name);
+            
+            // Optionally restore the last playing song (don't auto-play)
+            if (savedState) {
+              const parsedState = JSON.parse(savedState);
+              if (parsedState.currentSong) {
+                const songToRestore = playlistSongs.find(s => s.id === parsedState.currentSong.id);
+                if (songToRestore) {
+                  const songIndex = playlistSongs.findIndex(s => s.id === songToRestore.id);
+                  setCurrentSong(songToRestore);
+                  setCurrentIndex(songIndex);
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to restore playlist:", error);
+      } finally {
+        // Mark restoration as completed for this session
+        sessionStorage.setItem(sessionKey, "true");
+      }
+    };
+
+    restorePlaylist();
+  }, [isAuthenticated, session?.user?.id]);
+
+  const setSelectedPlaylist = useCallback((playlistId: string | null, playlistName: string | null) => {
+    setSelectedPlaylistId(playlistId);
+    // Note: We don't automatically load the playlist here - that's handled elsewhere
+    // This just sets which playlist will receive new songs for authenticated users
+  }, []);
+
   const addToPlaylist = useCallback((song: PlaylistSong) => {
     // Mark that user has used the player
     setHasEverUsedPlayer(true);
+    
+    // For authenticated users, handle database playlist logic elsewhere (in hook)
+    // This provider method now just handles the in-memory queue for both auth states
+    
+    // Clear saved playlist context when adding individual songs to in-memory queue
+    if (!isAuthenticated) {
+      setCurrentPlaylistId(null);
+      setCurrentPlaylistName(null);
+    }
     
     setPlaylist(prev => {
       // Check if song already exists in playlist
@@ -180,7 +323,7 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
       
       return newPlaylist;
     });
-  }, []);
+  }, [isAuthenticated]);
 
   const removeFromPlaylist = useCallback((songId: string) => {
     setPlaylist(prev => {
@@ -221,6 +364,27 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setCurrentPlaylistId(null);
+    setCurrentPlaylistName(null);
+    // Don't clear selectedPlaylistId - user's selected playlist remains for future additions
+  }, []);
+
+  const loadSavedPlaylist = useCallback((playlistId: string, playlistName: string, songs: PlaylistSong[]) => {
+    setHasEverUsedPlayer(true);
+    setPlaylist(songs);
+    setCurrentPlaylistId(playlistId);
+    setCurrentPlaylistName(playlistName);
+    
+    if (songs.length > 0) {
+      setCurrentIndex(0);
+      setCurrentSong(songs[0]);
+      setIsPlaying(true);
+      setCurrentTime(0);
+    } else {
+      setCurrentIndex(-1);
+      setCurrentSong(null);
+      setIsPlaying(false);
+    }
   }, []);
 
   // Smart shuffle: prioritize songs that haven't been played recently
@@ -388,7 +552,12 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
     isShuffling,
     isPlayerVisible,
     hasEverUsedPlayer,
+    currentPlaylistId,
+    currentPlaylistName,
+    selectedPlaylistId,
+    isAuthenticated,
     addToPlaylist,
+    setSelectedPlaylist,
     removeFromPlaylist,
     clearPlaylist,
     playSong,
@@ -403,6 +572,7 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
     toggleShuffle,
     showPlayer,
     hidePlayer,
+    loadSavedPlaylist,
   };
 
   return (

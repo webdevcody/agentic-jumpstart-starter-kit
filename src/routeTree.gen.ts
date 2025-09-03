@@ -15,9 +15,11 @@ import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PlaylistsRouteImport } from './routes/playlists'
 import { Route as MySongsRouteImport } from './routes/my-songs'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlaylistsIdRouteImport } from './routes/playlists/$id'
 import { Route as SongIdIndexRouteImport } from './routes/song/$id/index'
 import { Route as SongIdEditRouteImport } from './routes/song/$id/edit'
 import { ServerRoute as ApiStripeWebhookServerRouteImport } from './routes/api/stripe/webhook'
@@ -45,6 +47,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlaylistsRoute = PlaylistsRouteImport.update({
+  id: '/playlists',
+  path: '/playlists',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MySongsRoute = MySongsRouteImport.update({
   id: '/my-songs',
   path: '/my-songs',
@@ -59,6 +66,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PlaylistsIdRoute = PlaylistsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PlaylistsRoute,
 } as any)
 const SongIdIndexRoute = SongIdIndexRouteImport.update({
   id: '/song/$id/',
@@ -85,10 +97,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/my-songs': typeof MySongsRoute
+  '/playlists': typeof PlaylistsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/upload': typeof UploadRoute
+  '/playlists/$id': typeof PlaylistsIdRoute
   '/song/$id/edit': typeof SongIdEditRoute
   '/song/$id': typeof SongIdIndexRoute
 }
@@ -96,10 +110,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/my-songs': typeof MySongsRoute
+  '/playlists': typeof PlaylistsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/upload': typeof UploadRoute
+  '/playlists/$id': typeof PlaylistsIdRoute
   '/song/$id/edit': typeof SongIdEditRoute
   '/song/$id': typeof SongIdIndexRoute
 }
@@ -108,10 +124,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/my-songs': typeof MySongsRoute
+  '/playlists': typeof PlaylistsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/upload': typeof UploadRoute
+  '/playlists/$id': typeof PlaylistsIdRoute
   '/song/$id/edit': typeof SongIdEditRoute
   '/song/$id/': typeof SongIdIndexRoute
 }
@@ -121,10 +139,12 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/my-songs'
+    | '/playlists'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/upload'
+    | '/playlists/$id'
     | '/song/$id/edit'
     | '/song/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -132,10 +152,12 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/my-songs'
+    | '/playlists'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/upload'
+    | '/playlists/$id'
     | '/song/$id/edit'
     | '/song/$id'
   id:
@@ -143,10 +165,12 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/my-songs'
+    | '/playlists'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/upload'
+    | '/playlists/$id'
     | '/song/$id/edit'
     | '/song/$id/'
   fileRoutesById: FileRoutesById
@@ -155,6 +179,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrowseRoute: typeof BrowseRoute
   MySongsRoute: typeof MySongsRoute
+  PlaylistsRoute: typeof PlaylistsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -218,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/playlists': {
+      id: '/playlists'
+      path: '/playlists'
+      fullPath: '/playlists'
+      preLoaderRoute: typeof PlaylistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my-songs': {
       id: '/my-songs'
       path: '/my-songs'
@@ -238,6 +270,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/playlists/$id': {
+      id: '/playlists/$id'
+      path: '/$id'
+      fullPath: '/playlists/$id'
+      preLoaderRoute: typeof PlaylistsIdRouteImport
+      parentRoute: typeof PlaylistsRoute
     }
     '/song/$id/': {
       id: '/song/$id/'
@@ -274,10 +313,23 @@ declare module '@tanstack/react-start/server' {
   }
 }
 
+interface PlaylistsRouteChildren {
+  PlaylistsIdRoute: typeof PlaylistsIdRoute
+}
+
+const PlaylistsRouteChildren: PlaylistsRouteChildren = {
+  PlaylistsIdRoute: PlaylistsIdRoute,
+}
+
+const PlaylistsRouteWithChildren = PlaylistsRoute._addFileChildren(
+  PlaylistsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrowseRoute: BrowseRoute,
   MySongsRoute: MySongsRoute,
+  PlaylistsRoute: PlaylistsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
