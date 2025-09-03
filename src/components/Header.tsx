@@ -24,6 +24,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
+import * as React from "react";
 import { usePlaylist } from "./playlist-provider";
 
 const navigationLinks = [
@@ -42,7 +43,15 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenPlaylist }: HeaderProps = {}) {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, error } = authClient.useSession();
+  
+  // Debug logging for session state
+  React.useEffect(() => {
+    console.log('Header useSession state:', { session, isPending, error });
+    if (error) {
+      console.error('useSession error:', error);
+    }
+  }, [session, isPending, error]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { avatarUrl } = useUserAvatar();
   const { playlist, showPlayer } = usePlaylist();
@@ -54,7 +63,7 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
           <Link to="/" className="mr-6 flex items-center space-x-2">
             <AudioWaveform />{" "}
             <span className="hidden font-bold sm:inline-block">
-              SoundHub
+              SoundStation
             </span>
           </Link>
 
@@ -90,7 +99,7 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <AudioWaveform className="h-6 w-6" />
-                <span className="font-bold">SoundHub</span>
+                <span className="font-bold">SoundStation</span>
               </Link>
               <nav className="flex flex-col gap-3 mt-6">
                 {navigationLinks.map((link) => (
@@ -127,7 +136,7 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
         </Sheet>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none"></div>
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-4">
             {/* Playlist button - show at all times */}
             {onOpenPlaylist && (
               <Button
@@ -148,7 +157,7 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
                 <span className="sr-only">Open playlist</span>
               </Button>
             )}
-            
+
             {isPending ? (
               <div className="flex h-9 w-9 items-center justify-center">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -201,6 +210,7 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
                         <span>My Playlists</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/settings">
                         <Settings className="mr-2 h-4 w-4" />

@@ -9,6 +9,8 @@ import {
 import * as React from "react";
 import { useState } from "react";
 import type { QueryClient } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary";
 import { NotFound } from "~/components/NotFound";
 import appCss from "~/styles/app.css?url";
@@ -174,9 +176,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               open={isPlaylistOpen}
               onOpenChange={setIsPlaylistOpen}
             />
-            {/* <TanStackRouterDevtools position="bottom-right" />
-            <ReactQueryDevtools buttonPosition="bottom-left" /> */}
-            <Toaster />
+            <TanStackRouterDevtools position="bottom-right" />
+            <ReactQueryDevtools buttonPosition="bottom-left" />
+            <Toaster position="top-left" />
             <Scripts />
           </PlaylistProvider>
         </ThemeProvider>

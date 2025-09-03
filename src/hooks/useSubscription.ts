@@ -1,21 +1,27 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  createCheckoutSessionServerFn,
-  createPortalSessionServerFn,
-  cancelSubscriptionServerFn,
-} from "~/server/subscription";
+  createCheckoutSessionFn,
+  createPortalSessionFn,
+  cancelSubscriptionFn,
+} from "~/fn/subscriptions";
 import { getUserPlanQuery } from "~/queries/subscription";
+import { authClient } from "~/lib/auth-client";
 
 // Hook to get user's current subscription plan
 export function useUserPlan() {
-  return useQuery(getUserPlanQuery());
+  const { data: session } = authClient.useSession();
+  
+  return useQuery({
+    ...getUserPlanQuery(),
+    enabled: !!session?.user, // Only run query if user is authenticated
+  });
 }
 
 // Hook for creating checkout sessions
 export function useCreateCheckoutSession() {
   return useMutation({
-    mutationFn: createCheckoutSessionServerFn,
+    mutationFn: createCheckoutSessionFn,
     onSuccess: (result) => {
       if (result.success && result.data?.sessionUrl) {
         window.location.href = result.data.sessionUrl;
@@ -32,7 +38,7 @@ export function useCreateCheckoutSession() {
 // Hook for creating portal sessions
 export function useCreatePortalSession() {
   return useMutation({
-    mutationFn: createPortalSessionServerFn,
+    mutationFn: createPortalSessionFn,
     onSuccess: (result) => {
       if (result.success && result.data?.sessionUrl) {
         window.open(result.data.sessionUrl, "_blank");
@@ -49,7 +55,7 @@ export function useCreatePortalSession() {
 // Hook for canceling subscriptions
 export function useCancelSubscription() {
   return useMutation({
-    mutationFn: cancelSubscriptionServerFn,
+    mutationFn: cancelSubscriptionFn,
     onSuccess: (result) => {
       if (result.success) {
         toast.success(

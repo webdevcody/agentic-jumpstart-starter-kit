@@ -1,14 +1,14 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchPosts, fetchPost } from "~/utils/posts";
+import { fetchPostsFn, fetchPostFn } from "~/fn/posts";
 
 export const postsQueryOptions = () =>
   queryOptions({
     queryKey: ["posts"],
-    queryFn: () => fetchPosts(),
+    queryFn: () => fetchPostsFn(),
   });
 
 export const postQueryOptions = (postId: string) =>
   queryOptions({
     queryKey: ["post", postId],
-    queryFn: () => fetchPost({ data: postId }),
+    queryFn: () => fetchPostFn({ data: postId }),
   });

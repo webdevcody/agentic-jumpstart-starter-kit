@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import type { Song } from "~/db/schema";
 import type { SongWithUrls } from "~/data-access/songs";
 import { authClient } from "~/lib/auth-client";
+// Temporary imports for complex loading logic - to be refactored later
 import { getLastPlaylistFn, getPlaylistByIdFn } from "~/fn/playlists";
 import { getAudioUrlFn, getCoverImageUrlFn } from "~/fn/audio-storage";
 
@@ -117,8 +118,15 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
 
   // Get authentication status
-  const { data: session } = authClient.useSession();
+  const { data: session, error: sessionError } = authClient.useSession();
   const isAuthenticated = !!session?.user;
+
+  // Debug session errors
+  useEffect(() => {
+    if (sessionError) {
+      console.error('PlaylistProvider useSession error:', sessionError);
+    }
+  }, [sessionError]);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -369,15 +377,16 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
     // Don't clear selectedPlaylistId - user's selected playlist remains for future additions
   }, []);
 
-  const loadSavedPlaylist = useCallback((playlistId: string, playlistName: string, songs: PlaylistSong[]) => {
+  const loadSavedPlaylist = useCallback((playlistId: string, playlistName: string, songs: PlaylistSong[], startIndex?: number) => {
     setHasEverUsedPlayer(true);
     setPlaylist(songs);
     setCurrentPlaylistId(playlistId);
     setCurrentPlaylistName(playlistName);
     
     if (songs.length > 0) {
-      setCurrentIndex(0);
-      setCurrentSong(songs[0]);
+      const validStartIndex = startIndex !== undefined && startIndex >= 0 && startIndex < songs.length ? startIndex : 0;
+      setCurrentIndex(validStartIndex);
+      setCurrentSong(songs[validStartIndex]);
       setIsPlaying(true);
       setCurrentTime(0);
     } else {

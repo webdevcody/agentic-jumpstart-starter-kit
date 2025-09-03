@@ -8,6 +8,7 @@ export const SUBSCRIPTION_PLANS = {
     priceId: null,
     features: [
       "Upload up to 5 songs",
+      "Create 1 playlist",
       "Basic audio hosting",
       "Community support",
     ],
@@ -19,6 +20,7 @@ export const SUBSCRIPTION_PLANS = {
     priceId: publicEnv.STRIPE_BASIC_PRICE_ID,
     features: [
       "Upload up to 50 songs",
+      "Create up to 5 playlists",
       "High-quality audio hosting",
       "Basic analytics",
       "Email support",
@@ -31,6 +33,7 @@ export const SUBSCRIPTION_PLANS = {
     priceId: publicEnv.STRIPE_PRO_PRICE_ID,
     features: [
       "Unlimited song uploads",
+      "Unlimited playlists",
       "Lossless audio hosting",
       "Advanced analytics",
       "Priority support",

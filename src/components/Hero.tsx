@@ -1,6 +1,6 @@
-import { Button } from "~/components/ui/button"
-import { Link } from "@tanstack/react-router"
-import { Play, Music, Users, Headphones } from "lucide-react"
+import { Button } from "~/components/ui/button";
+import { Link } from "@tanstack/react-router";
+import { Play, Music, Users, Headphones } from "lucide-react";
 
 export function Hero() {
   return (
@@ -10,22 +10,23 @@ export function Hero() {
           <div className="space-y-4">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               Share Your Sound with{" "}
-              <span className="text-primary">SoundHub</span>
+              <span className="text-primary">SoundStation</span>
             </h1>
             <p className="text-lg text-muted-foreground sm:text-xl max-w-2xl">
-              Upload, discover, and share music with our modern audio platform. 
-              Connect with artists, build your fanbase, and explore unlimited musical creativity.
+              Upload, discover, and share music with our modern audio platform.
+              Connect with artists, build your fanbase, and explore unlimited
+              musical creativity.
             </p>
           </div>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Button asChild size="lg" className="text-base">
-              <Link to="/sign-up">
-                Start Creating Music
-              </Link>
+              <Link to="/sign-up">Start Creating Music</Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-base">
-              <Play className="mr-2 h-4 w-4" />
-              Discover Songs
+            <Button variant="outline" size="lg" className="text-base" asChild>
+              <Link to="/browse">
+                <Play className="mr-2 h-4 w-4" />
+                Discover Songs
+              </Link>
             </Button>
           </div>
           <div className="grid grid-cols-3 gap-6 pt-4">
@@ -51,12 +52,15 @@ export function Hero() {
                   <Play className="h-10 w-10 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Your Music</h3>
-                <p className="text-sm text-muted-foreground">Create amazing tracks that reach millions of listeners worldwide</p>
+                <p className="text-sm text-muted-foreground">
+                  Create amazing tracks that reach millions of listeners
+                  worldwide
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }

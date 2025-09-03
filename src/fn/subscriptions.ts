@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { authenticatedMiddleware } from "~/fn/middleware";
+import { authenticatedMiddleware } from "./middleware";
 import { stripe } from "~/lib/stripe";
 import { getUserSubscription } from "~/utils/subscription";
 import { getPlanByPriceId } from "~/lib/plans";
 import { publicEnv } from "~/config/publicEnv";
 
 // Get user's current subscription and plan info
-export const getUserPlanServerFn = createServerFn({ method: "GET" })
+export const getUserPlanFn = createServerFn({ method: "GET" })
   .middleware([authenticatedMiddleware])
   .handler(async ({ context }) => {
     const { userId } = context;
@@ -45,7 +45,7 @@ const createCheckoutSessionSchema = z.object({
   priceId: z.string().min(1, "Price ID is required"),
 });
 
-export const createCheckoutSessionServerFn = createServerFn({ method: "POST" })
+export const createCheckoutSessionFn = createServerFn({ method: "POST" })
   .middleware([authenticatedMiddleware])
   .validator(createCheckoutSessionSchema)
   .handler(async ({ data, context }) => {
@@ -116,7 +116,7 @@ export const createCheckoutSessionServerFn = createServerFn({ method: "POST" })
   });
 
 // Create customer portal session for subscription management
-export const createPortalSessionServerFn = createServerFn({ method: "POST" })
+export const createPortalSessionFn = createServerFn({ method: "POST" })
   .middleware([authenticatedMiddleware])
   .handler(async ({ context }) => {
     const { userId } = context;
@@ -152,7 +152,7 @@ export const createPortalSessionServerFn = createServerFn({ method: "POST" })
   });
 
 // Cancel subscription (sets to cancel at period end)
-export const cancelSubscriptionServerFn = createServerFn({ method: "POST" })
+export const cancelSubscriptionFn = createServerFn({ method: "POST" })
   .middleware([authenticatedMiddleware])
   .handler(async ({ context }) => {
     const { userId } = context;

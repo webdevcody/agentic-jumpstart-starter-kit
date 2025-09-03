@@ -18,13 +18,12 @@ import {
 import { usePlaylist, toPlaylistSong } from "~/components/playlist-provider";
 import { formatDuration } from "~/utils/song";
 import { EmptyState } from "~/components/EmptyState";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePlaylists, usePlaylistById, useRemoveSongFromPlaylist } from "~/hooks/usePlaylists";
+import { useAudioUrl, useCoverImageUrl } from "~/hooks/useAudioStorage";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+// Temporary imports for complex loading logic - to be refactored later
 import { getCoverImageUrlFn, getAudioUrlFn } from "~/fn/audio-storage";
-import {
-  getPlaylistsFn,
-  getPlaylistByIdFn,
-  removeSongFromPlaylistFn,
-} from "~/fn/playlists";
+import { getPlaylistByIdFn } from "~/fn/playlists";
 import { CreatePlaylistDialog } from "~/components/CreatePlaylistDialog";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
@@ -62,14 +61,8 @@ export function PlaylistSheet({ open, onOpenChange }: PlaylistSheetProps) {
     }
   }, [isAuthenticated]);
 
-  // Fetch user's playlists
-  const { data: userPlaylists = [] } = useQuery({
-    queryKey: ["playlists"],
-    queryFn: async () => {
-      const result = await getPlaylistsFn();
-      return result;
-    },
-  });
+  // Fetch user's playlists using hook
+  const { data: userPlaylists = [] } = usePlaylists();
 
   // Load saved playlist mutation
   const loadPlaylistMutation = useMutation({
@@ -108,24 +101,8 @@ export function PlaylistSheet({ open, onOpenChange }: PlaylistSheetProps) {
     },
   });
 
-  // Remove song from database playlist mutation
-  const removeSongMutation = useMutation({
-    mutationFn: removeSongFromPlaylistFn,
-    onSuccess: async (_, variables) => {
-      const { playlistId } = variables.data;
-
-      // Invalidate playlist queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["playlists"] });
-
-      // Invalidate the specific playlist that was updated
-      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
-
-      toast.success("Song removed from playlist");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to remove song from playlist");
-    },
-  });
+  // Use remove song from playlist hook
+  const removeSongMutation = useRemoveSongFromPlaylist();
 
   // Auto-load saved playlist when playlists are available
   useEffect(() => {
@@ -172,12 +149,12 @@ export function PlaylistSheet({ open, onOpenChange }: PlaylistSheetProps) {
 
   const handlePlaylistCreated = (playlistId: string, playlistName: string) => {
     setLocalSelectedPlaylistId(playlistId);
-    
+
     // Save to localStorage
     if (isAuthenticated) {
       localStorage.setItem("lastSelectedPlaylistId", playlistId);
     }
-    
+
     // Also update the global selected playlist for adding songs
     setSelectedPlaylist(playlistId, playlistName);
   };
@@ -249,10 +226,11 @@ export function PlaylistSheet({ open, onOpenChange }: PlaylistSheetProps) {
                 </SelectContent>
               </Select>
 
-              {/* Create New Playlist Button */}
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4" />
-              </Button>
+              <CreatePlaylistDialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+                onPlaylistCreated={handlePlaylistCreated}
+              />
             </div>
           ) : (
             <h2 className="text-lg font-semibold">
@@ -267,13 +245,6 @@ export function PlaylistSheet({ open, onOpenChange }: PlaylistSheetProps) {
               : `${playlist.length} song${playlist.length === 1 ? "" : "s"}`}
           </p>
         </div>
-
-        {/* Create Playlist Dialog */}
-        <CreatePlaylistDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-          onPlaylistCreated={handlePlaylistCreated}
-        />
 
         {/* Songs List - Clean and Spacious */}
         {playlist.length === 0 ? (
@@ -382,7 +353,7 @@ function SongItem({
           >
             {song.title}
           </Link>
-          
+
           {/* Artist and album info */}
           <div>
             <p className="text-sm text-muted-foreground truncate">

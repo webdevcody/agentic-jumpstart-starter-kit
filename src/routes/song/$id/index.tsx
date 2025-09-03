@@ -18,12 +18,11 @@ import { Button } from "~/components/ui/button";
 import { AppBreadcrumb } from "~/components/AppBreadcrumb";
 import { getSongByIdQuery } from "~/queries/songs";
 import { formatDuration, formatRelativeTime } from "~/utils/song";
-import { getAudioUrlFn, getCoverImageUrlFn } from "~/fn/audio-storage";
+import { useAudioUrl, useCoverImageUrl } from "~/hooks/useAudioStorage";
 import { authClient } from "~/lib/auth-client";
 import { usePlaylist } from "~/components/playlist-provider";
 import { useSongBreadcrumbs } from "~/hooks/useSongBreadcrumbs";
-import { toggleHeartFn, getHeartStatusFn } from "~/fn/hearts";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useHeartStatus, useToggleHeart } from "~/hooks/useHearts";
 
 export const Route = createFileRoute("/song/$id/")({
   loader: ({ context: { queryClient }, params: { id } }) => {
@@ -38,47 +37,17 @@ function SongDetail() {
   const [isDownloading, setIsDownloading] = useState(false);
   const { addToPlaylist, playlist } = usePlaylist();
   const breadcrumbItems = useSongBreadcrumbs(song?.title || "Song Details");
-  const queryClient = useQueryClient();
 
   // Get current user session to check if user can edit
   const { data: session } = authClient.useSession();
 
-  // Heart status query - only for authenticated users
-  const { data: heartStatus } = useQuery({
-    queryKey: ["heart-status", id],
-    queryFn: () => getHeartStatusFn({ data: { songId: id } }),
-    enabled: !!session?.user && !!song,
-  });
+  // Use heart hooks
+  const { data: heartStatus } = useHeartStatus(id, !!session?.user && !!song);
+  const heartMutation = useToggleHeart();
 
-  // Heart toggle mutation
-  const heartMutation = useMutation({
-    mutationFn: (songId: string) => toggleHeartFn({ data: { songId } }),
-    onSuccess: () => {
-      // Invalidate heart status query to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["heart-status", id] });
-      toast.success(
-        heartStatus?.isHearted ? "Removed from favorites" : "Added to favorites"
-      );
-    },
-    onError: (error) => {
-      toast.error("Failed to update heart status");
-      console.error("Heart toggle error:", error);
-    },
-  });
-
-  // Get presigned URLs from S3 keys
-  const { data: audioUrlData } = useQuery({
-    queryKey: ["audio-url", song?.audioKey],
-    queryFn: () => getAudioUrlFn({ data: { audioKey: song!.audioKey! } }),
-    enabled: !!song?.audioKey,
-  });
-
-  const { data: coverUrlData } = useQuery({
-    queryKey: ["cover-url", song?.coverImageKey],
-    queryFn: () =>
-      getCoverImageUrlFn({ data: { coverKey: song!.coverImageKey! } }),
-    enabled: !!song?.coverImageKey,
-  });
+  // Use audio storage hooks
+  const { data: audioUrlData } = useAudioUrl(song?.audioKey || "", !!song?.audioKey);
+  const { data: coverUrlData } = useCoverImageUrl(song?.coverImageKey || "", !!song?.coverImageKey);
 
   const displayAudioUrl = audioUrlData?.audioUrl;
   const displayCoverUrl = coverUrlData?.coverUrl;

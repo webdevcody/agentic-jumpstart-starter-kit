@@ -1,20 +1,30 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { authenticatedMiddleware, planAuthMiddleware } from "./middleware";
+import { authenticatedMiddleware } from "./middleware";
 import {
-  findPlaylistById,
-  createPlaylist,
   updatePlaylist,
-  deletePlaylist,
   findPlaylistsByUserId,
-  countPlaylistsByUserId,
   findPlaylistByIdWithSongs,
   addSongToPlaylist,
   removeSongFromPlaylist,
   checkPlaylistOwnership,
   findPublicPlaylists,
 } from "~/data-access/playlists";
-import { hasValidPlan, getUserPlan } from "~/data-access/users";
+import {
+  CreatePlaylistInput,
+  createPlaylistUseCase,
+  PlaylistLimitError,
+} from "~/use-cases/createPlaylistUseCase";
+import {
+  GetOrCreateDefaultPlaylistInput,
+  getOrCreateDefaultPlaylistUseCase,
+} from "~/use-cases/getOrCreateDefaultPlaylistUseCase";
+import {
+  DeletePlaylistInput,
+  deletePlaylistUseCase,
+  PlaylistNotFoundError,
+  UnauthorizedPlaylistAccessError,
+} from "~/use-cases/deletePlaylistUseCase";
 
 export const getPlaylistsFn = createServerFn()
   .middleware([authenticatedMiddleware])
@@ -51,31 +61,26 @@ export const createPlaylistFn = createServerFn({
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    
-    const currentCount = await countPlaylistsByUserId(userId);
-    
-    const userPlan = await getUserPlan(userId);
-    
-    if (!userPlan.isActive) {
-      throw new Error("Your subscription has expired. Please renew to create playlists.");
-    }
-    
-    if (userPlan.plan === "free") {
-      throw new Error("Creating playlists requires a Basic plan or higher.");
-    }
-    
-    if (userPlan.plan === "basic" && currentCount >= 5) {
-      throw new Error("Basic plan allows up to 5 playlists. Upgrade to Pro for unlimited playlists.");
-    }
 
-    const playlistData = {
-      id: crypto.randomUUID(),
-      ...data,
-      userId,
-    };
+    try {
+      const input: CreatePlaylistInput = {
+        userId,
+        name: data.name,
+        description: data.description,
+        isPublic: data.isPublic,
+      };
 
-    const newPlaylist = await createPlaylist(playlistData);
-    return newPlaylist;
+      const newPlaylist = await createPlaylistUseCase(input);
+      return newPlaylist;
+    } catch (error) {
+      if (error instanceof PlaylistLimitError) {
+        // Re-throw as a regular Error with the error code as the message
+        // This maintains the existing client-side error handling
+        throw new Error(error.errorCode);
+      }
+      // Re-throw any other errors as-is
+      throw error;
+    }
   });
 
 export const updatePlaylistFn = createServerFn({
@@ -92,7 +97,7 @@ export const updatePlaylistFn = createServerFn({
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { id, ...updateData } = data;
-    
+
     const isOwner = await checkPlaylistOwnership(id, context.userId);
     if (!isOwner) {
       throw new Error("Unauthorized: You can only edit your own playlists");
@@ -102,7 +107,7 @@ export const updatePlaylistFn = createServerFn({
     if (!updatedPlaylist) {
       throw new Error("Failed to update playlist");
     }
-    
+
     return updatedPlaylist;
   });
 
@@ -113,18 +118,26 @@ export const deletePlaylistFn = createServerFn({
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { id } = data;
-    
-    const isOwner = await checkPlaylistOwnership(id, context.userId);
-    if (!isOwner) {
-      throw new Error("Unauthorized: You can only delete your own playlists");
-    }
+    const { userId } = context;
 
-    const deleted = await deletePlaylist(id);
-    if (!deleted) {
-      throw new Error("Failed to delete playlist");
+    try {
+      const input: DeletePlaylistInput = {
+        playlistId: id,
+        userId,
+      };
+
+      const result = await deletePlaylistUseCase(input);
+      return result;
+    } catch (error) {
+      if (error instanceof PlaylistNotFoundError) {
+        throw new Error("Playlist not found");
+      }
+      if (error instanceof UnauthorizedPlaylistAccessError) {
+        throw new Error("Unauthorized: You can only delete your own playlists");
+      }
+      // Re-throw any other errors as-is
+      throw error;
     }
-    
-    return { success: true };
   });
 
 export const addSongToPlaylistFn = createServerFn({
@@ -139,7 +152,7 @@ export const addSongToPlaylistFn = createServerFn({
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { playlistId, songId } = data;
-    
+
     const isOwner = await checkPlaylistOwnership(playlistId, context.userId);
     if (!isOwner) {
       throw new Error("Unauthorized: You can only modify your own playlists");
@@ -161,7 +174,7 @@ export const removeSongFromPlaylistFn = createServerFn({
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { playlistId, songId } = data;
-    
+
     const isOwner = await checkPlaylistOwnership(playlistId, context.userId);
     if (!isOwner) {
       throw new Error("Unauthorized: You can only modify your own playlists");
@@ -171,7 +184,7 @@ export const removeSongFromPlaylistFn = createServerFn({
     if (!removed) {
       throw new Error("Failed to remove song from playlist");
     }
-    
+
     return { success: true };
   });
 
@@ -187,7 +200,7 @@ export const addSongToSelectedPlaylistFn = createServerFn({
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { playlistId, songId } = data;
-    
+
     const isOwner = await checkPlaylistOwnership(playlistId, context.userId);
     if (!isOwner) {
       throw new Error("Unauthorized: You can only modify your own playlists");
@@ -201,42 +214,30 @@ export const getOrCreateDefaultPlaylistFn = createServerFn()
   .middleware([authenticatedMiddleware])
   .handler(async ({ context }) => {
     const { userId } = context;
-    
-    // First, try to find an existing playlist for the user
-    const existingPlaylists = await findPlaylistsByUserId(userId);
-    if (existingPlaylists.length > 0) {
-      // Return the most recently created playlist
-      return existingPlaylists[0];
-    }
-    
-    // If no playlists exist, create a default one
-    const userPlan = await getUserPlan(userId);
-    
-    if (!userPlan.isActive) {
-      throw new Error("Your subscription has expired. Please renew to create playlists.");
-    }
-    
-    if (userPlan.plan === "free") {
-      throw new Error("Creating playlists requires a Basic plan or higher.");
-    }
 
-    const defaultPlaylistData = {
-      id: crypto.randomUUID(),
-      name: "My Playlist",
-      description: "My first playlist",
-      isPublic: false,
-      userId,
-    };
+    try {
+      const input: GetOrCreateDefaultPlaylistInput = {
+        userId,
+      };
 
-    const newPlaylist = await createPlaylist(defaultPlaylistData);
-    return newPlaylist;
+      const playlist = await getOrCreateDefaultPlaylistUseCase(input);
+      return playlist;
+    } catch (error) {
+      if (error instanceof PlaylistLimitError) {
+        // Re-throw as a regular Error with the error code as the message
+        // This maintains the existing client-side error handling
+        throw new Error(error.errorCode);
+      }
+      // Re-throw any other errors as-is
+      throw error;
+    }
   });
 
 export const getLastPlaylistFn = createServerFn()
   .middleware([authenticatedMiddleware])
   .handler(async ({ context }) => {
     const { userId } = context;
-    
+
     // Get the most recent playlist for the user
     const playlists = await findPlaylistsByUserId(userId);
     if (playlists.length > 0) {
@@ -244,6 +245,6 @@ export const getLastPlaylistFn = createServerFn()
       const latestPlaylist = await findPlaylistByIdWithSongs(playlists[0].id);
       return latestPlaylist;
     }
-    
+
     return null;
   });

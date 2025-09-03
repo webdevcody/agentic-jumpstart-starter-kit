@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { createSongFn, deleteSongFn } from "~/fn/songs";
+import { createSongFn, deleteSongFn, updateSongFn } from "~/fn/songs";
 import { getErrorMessage } from "~/utils/error";
 
 // Hook for creating songs
@@ -19,6 +19,31 @@ export function useCreateSong() {
     },
     onError: (error) => {
       toast.error("Failed to create song", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+}
+
+// Hook for updating songs
+export function useUpdateSong() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: Parameters<typeof updateSongFn>[0]['data']) => 
+      updateSongFn({ data }),
+    onSuccess: (song) => {
+      toast.success("Song updated successfully!", {
+        description: "Your song changes have been saved.",
+      });
+      // Invalidate song-related queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["song", song.id] });
+      queryClient.invalidateQueries({ queryKey: ["user-songs"] });
+      queryClient.invalidateQueries({ queryKey: ["popular-songs"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-songs"] });
+    },
+    onError: (error) => {
+      toast.error("Failed to update song", {
         description: getErrorMessage(error),
       });
     },

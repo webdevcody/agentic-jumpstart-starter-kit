@@ -1,20 +1,20 @@
 import {
   ErrorComponent,
   Link,
-  rootRouteId,
-  useMatch,
   useRouter,
+  useRouterState,
 } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
   const router = useRouter()
-  const isRoot = useMatch({
-    strict: false,
-    select: (state) => state.id === rootRouteId,
-  })
+  const routerState = useRouterState()
+  
+  const isAuthPage = ['/sign-in', '/sign-up'].includes(routerState.location.pathname)
 
-  console.error(error)
+  console.error('DefaultCatchBoundary triggered:', error)
+  console.log('Current route:', routerState.location.pathname)
+  console.log('Is auth page:', isAuthPage)
 
   return (
     <div className="min-w-0 flex-1 p-4 flex flex-col items-center justify-center gap-6">
@@ -28,7 +28,7 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
         >
           Try Again
         </button>
-        {isRoot ? (
+        {isAuthPage ? (
           <Link
             to="/"
             className={`px-2 py-1 bg-gray-600 dark:bg-gray-700 rounded text-white uppercase font-extrabold`}
@@ -37,14 +37,10 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
           </Link>
         ) : (
           <Link
-            to="/"
+            to="/browse"
             className={`px-2 py-1 bg-gray-600 dark:bg-gray-700 rounded text-white uppercase font-extrabold`}
-            onClick={(e) => {
-              e.preventDefault()
-              window.history.back()
-            }}
           >
-            Go Back
+            Browse Songs
           </Link>
         )}
       </div>

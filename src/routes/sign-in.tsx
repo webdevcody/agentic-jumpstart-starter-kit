@@ -46,6 +46,14 @@ function RouteComponent() {
   const [showPassword, setShowPassword] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Sign-in component mounted');
+    return () => {
+      console.log('Sign-in component unmounting');
+    };
+  }, []);
+
   const testimonials = [
     {
       quote:

@@ -12,9 +12,12 @@ import {
   Shuffle
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { Tooltip } from "~/components/ui/tooltip";
+import { Slider } from "~/components/ui/slider";
 import { usePlaylist } from "~/components/playlist-provider";
 import { formatDuration } from "~/utils/song";
 import { useQuery } from "@tanstack/react-query";
+// Temporary import for complex loading logic - to be refactored later
 import { getCoverImageUrlFn } from "~/fn/audio-storage";
 
 interface MusicPlayerProps {
@@ -43,12 +46,19 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
     toggleShuffle,
     showPlayer,
     hidePlayer,
-    playlist
+    playlist,
+    currentIndex
   } = usePlaylist();
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Determine when buttons should be disabled
+  const isAtFirstSong = currentIndex === 0;
+  const isAtLastSong = currentIndex === playlist.length - 1;
+  const canGoNext = isLooping || isShuffling || !isAtLastSong;
+  const canGoPrevious = isLooping || !isAtFirstSong;
 
   // Update audio element when current song changes
   useEffect(() => {
@@ -147,8 +157,8 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
     setVolume(volume > 0 ? 0 : 1);
   };
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVolume(parseFloat(e.target.value));
+  const handleVolumeChange = (values: number[]) => {
+    setVolume(values[0]);
   };
 
   const handleClose = () => {
@@ -252,14 +262,19 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
                 <Shuffle className="h-4 w-4" />
               </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={playPrevious}
-                disabled={playlist.length <= 1}
+              <Tooltip
+                content={!canGoPrevious ? "Cannot go to previous song - you're at the first song and loop is disabled" : ""}
+                disabled={canGoPrevious}
               >
-                <SkipBack className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={playPrevious}
+                  disabled={playlist.length <= 1 || !canGoPrevious}
+                >
+                  <SkipBack className="h-4 w-4" />
+                </Button>
+              </Tooltip>
 
               <Button
                 variant="ghost"
@@ -274,14 +289,19 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
                 )}
               </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={playNext}
-                disabled={playlist.length <= 1}
+              <Tooltip
+                content={!canGoNext ? "Cannot go to next song - you're at the last song and loop is disabled" : ""}
+                disabled={canGoNext}
               >
-                <SkipForward className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={playNext}
+                  disabled={playlist.length <= 1 || !canGoNext}
+                >
+                  <SkipForward className="h-4 w-4" />
+                </Button>
+              </Tooltip>
 
               {/* Loop button */}
               <Button
@@ -309,14 +329,13 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
                     <VolumeX className="h-4 w-4" />
                   )}
                 </Button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={volume}
-                  onChange={handleVolumeChange}
-                  className="w-20 h-1 bg-muted rounded-lg appearance-none cursor-pointer slider"
+                <Slider
+                  value={[volume]}
+                  onValueChange={handleVolumeChange}
+                  max={1}
+                  min={0}
+                  step={0.1}
+                  className="w-20"
                 />
               </div>
 
@@ -343,24 +362,6 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
         </div>
       </div>
 
-      <style>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          height: 12px;
-          width: 12px;
-          border-radius: 50%;
-          background: hsl(var(--primary));
-          cursor: pointer;
-        }
-        .slider::-moz-range-thumb {
-          height: 12px;
-          width: 12px;
-          border-radius: 50%;
-          background: hsl(var(--primary));
-          cursor: pointer;
-          border: none;
-        }
-      `}</style>
     </>
   );
 }

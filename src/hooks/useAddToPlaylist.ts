@@ -43,7 +43,17 @@ export function useAddToPlaylist() {
       setSelectedPlaylist(defaultPlaylist.id, defaultPlaylist.name);
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to create playlist");
+      const errorMessage = error.message;
+      
+      if (errorMessage === "PLAYLIST_LIMIT_FREE" || 
+          errorMessage === "PLAYLIST_LIMIT_BASIC" || 
+          errorMessage === "SUBSCRIPTION_EXPIRED") {
+        // For these specific errors, we'll show a more user-friendly message
+        // The proper error dialog should be handled at a higher level
+        toast.error("Unable to create playlist. Please check your subscription plan.");
+      } else {
+        toast.error(errorMessage || "Failed to create playlist");
+      }
     }
   });
 

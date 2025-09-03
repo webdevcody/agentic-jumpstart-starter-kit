@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Image, Loader2, Save, ArrowLeft, Home, Search, Music, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,8 +12,8 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { FileUpload } from "~/components/ui/file-upload";
 import { getSongByIdQuery } from "~/queries/songs";
-import { updateSongFn } from "~/fn/songs";
-import { getCoverImageUrlFn } from "~/fn/audio-storage";
+import { useCoverImageUrl } from "~/hooks/useAudioStorage";
+import { useUpdateSong } from "~/hooks/useSongs";
 import {
   uploadCoverImageWithPresignedUrl,
   uploadAudioWithPresignedUrl,
@@ -44,11 +44,7 @@ function CoverImageDisplay({
   onImageSelect: (files: File[]) => void;
   disabled: boolean;
 }) {
-  const { data: coverUrlData } = useQuery({
-    queryKey: ["cover-url", coverImageKey],
-    queryFn: () => getCoverImageUrlFn({ data: { coverKey: coverImageKey } }),
-    enabled: !!coverImageKey,
-  });
+  const { data: coverUrlData } = useCoverImageUrl(coverImageKey, !!coverImageKey);
 
   return (
     <div className="relative">
@@ -146,7 +142,7 @@ function EditSong() {
   const { id } = Route.useParams();
   const { data: song, isLoading, error } = useQuery(getSongByIdQuery(id));
   const { data: session } = authClient.useSession();
-  const queryClient = useQueryClient();
+  const updateSongMutation = useUpdateSong();
   const navigate = useNavigate();
   const breadcrumbItems = useSongBreadcrumbs(song?.title || "Song", "edit");
   const deleteSongMutation = useDeleteSong();
@@ -199,19 +195,11 @@ function EditSong() {
     }
   }, [song, canEdit, id, navigate]);
 
-  const updateSongMutation = useMutation({
-    mutationFn: updateSongFn,
-    onSuccess: () => {
-      toast.success("Song updated successfully!");
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["songs", id] });
-      // Navigate back to song page
-      window.history.back();
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update song: ${error.message}`);
-    },
-  });
+  // Custom navigation handler after successful update
+  const handleUpdateSuccess = () => {
+    // Navigate back to song page
+    window.history.back();
+  };
 
   const handleCoverImageSelect = useCallback((files: File[]) => {
     if (files.length > 0) {
@@ -335,7 +323,9 @@ function EditSong() {
       ...(duration && { duration }),
     };
 
-    updateSongMutation.mutate({ data: updateData });
+    updateSongMutation.mutate(updateData, {
+      onSuccess: handleUpdateSuccess,
+    });
   };
 
   const handleDeleteSong = async () => {
