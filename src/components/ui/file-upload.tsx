@@ -13,6 +13,7 @@ interface FileUploadProps {
   disabled?: boolean;
   className?: string;
   children?: React.ReactNode;
+  hideSelectedFiles?: boolean;
 }
 
 interface FileWithPreview extends File {
@@ -28,6 +29,7 @@ export function FileUpload({
   disabled = false,
   className,
   children,
+  hideSelectedFiles = false,
 }: FileUploadProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -139,7 +141,7 @@ export function FileUpload({
       )}
 
       {/* File list */}
-      {files.length > 0 && (
+      {files.length > 0 && !hideSelectedFiles && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

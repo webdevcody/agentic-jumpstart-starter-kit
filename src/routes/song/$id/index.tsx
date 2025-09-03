@@ -20,6 +20,7 @@ import { formatDuration, formatRelativeTime } from "~/utils/song";
 import { getAudioUrlFn, getCoverImageUrlFn } from "~/fn/audio-storage";
 import { authClient } from "~/lib/auth-client";
 import { usePlaylist } from "~/components/playlist-provider";
+import { useSongBreadcrumbs } from "~/hooks/useSongBreadcrumbs";
 
 export const Route = createFileRoute("/song/$id/")({
   loader: ({ context: { queryClient }, params: { id } }) => {
@@ -33,35 +34,27 @@ function SongDetail() {
   const { data: song, isLoading, error } = useQuery(getSongByIdQuery(id));
   const [isDownloading, setIsDownloading] = useState(false);
   const { addToPlaylist, playlist } = usePlaylist();
+  const breadcrumbItems = useSongBreadcrumbs(song?.title || "Song Details");
 
   // Get current user session to check if user can edit
   const { data: session } = authClient.useSession();
 
-  // Get the actual URLs from S3 keys if they don't look like full URLs
-  const shouldFetchAudioUrl =
-    song?.audioUrl && !song.audioUrl.startsWith("http");
-  const shouldFetchCoverUrl =
-    song?.coverImageUrl && !song.coverImageUrl.startsWith("http");
-
+  // Get presigned URLs from S3 keys
   const { data: audioUrlData } = useQuery({
-    queryKey: ["audio-url", song?.audioUrl],
-    queryFn: () => getAudioUrlFn({ data: { audioKey: song!.audioUrl } }),
-    enabled: shouldFetchAudioUrl,
+    queryKey: ["audio-url", song?.audioKey],
+    queryFn: () => getAudioUrlFn({ data: { audioKey: song!.audioKey! } }),
+    enabled: !!song?.audioKey,
   });
 
   const { data: coverUrlData } = useQuery({
-    queryKey: ["cover-url", song?.coverImageUrl],
+    queryKey: ["cover-url", song?.coverImageKey],
     queryFn: () =>
-      getCoverImageUrlFn({ data: { coverKey: song!.coverImageUrl! } }),
-    enabled: shouldFetchCoverUrl,
+      getCoverImageUrlFn({ data: { coverKey: song!.coverImageKey! } }),
+    enabled: !!song?.coverImageKey,
   });
 
-  const displayAudioUrl = shouldFetchAudioUrl
-    ? audioUrlData?.audioUrl
-    : song?.audioUrl;
-  const displayCoverUrl = shouldFetchCoverUrl
-    ? coverUrlData?.coverUrl
-    : song?.coverImageUrl;
+  const displayAudioUrl = audioUrlData?.audioUrl;
+  const displayCoverUrl = coverUrlData?.coverUrl;
 
   const handleDownload = async () => {
     if (!displayAudioUrl || !song) {
@@ -165,13 +158,7 @@ function SongDetail() {
   return (
     <Page>
       <div className="space-y-8">
-        <AppBreadcrumb
-          items={[
-            { label: "Home", href: "/", icon: Home },
-            { label: "Browse", href: "/browse", icon: Music },
-            { label: song?.title || "Song Details" },
-          ]}
-        />
+        <AppBreadcrumb items={breadcrumbItems} />
         {/* New Layout: Image on left, Info on right taking full width */}
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Album Art - Smaller and on the left */}
@@ -241,7 +228,10 @@ function SongDetail() {
                   </Button>
                   {canEdit && (
                     <Button asChild variant="outline" size="sm">
-                      <Link to={`/song/${id}/edit`}>
+                      <Link 
+                        to={`/song/${id}/edit`}
+                        state={{ from: breadcrumbItems.length > 0 && breadcrumbItems[0].href === '/my-songs' ? '/my-songs' : undefined }}
+                      >
                         <Edit3 className="h-4 w-4 mr-2" />
                         Edit
                       </Link>

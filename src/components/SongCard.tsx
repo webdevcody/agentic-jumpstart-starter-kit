@@ -7,6 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { useAddToPlaylist } from "~/hooks/useAddToPlaylist";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
+import type { PlaylistSong } from "~/components/playlist-provider";
 
 interface SongCardProps {
   song: Song;
@@ -15,21 +16,35 @@ interface SongCardProps {
 export function SongCard({ song }: SongCardProps) {
   const { handleAddToPlaylist: addToPlaylist, isInPlaylist } = useAddToPlaylist();
   
-  // Get the actual URLs from S3 keys if they don't look like full URLs
-  const shouldFetchCoverUrl = song.coverImageUrl && !song.coverImageUrl.startsWith('http');
+  // Get the actual URLs from S3 keys
+  const { data: audioUrlData } = useQuery({
+    queryKey: ['audio-url', song.audioKey],
+    queryFn: () => getAudioUrlFn({ data: { audioKey: song.audioKey! } }),
+    enabled: !!song.audioKey,
+  });
+  
   const { data: coverUrlData } = useQuery({
-    queryKey: ['cover-url', song.coverImageUrl],
-    queryFn: () => getCoverImageUrlFn({ data: { coverKey: song.coverImageUrl! } }),
-    enabled: shouldFetchCoverUrl,
+    queryKey: ['cover-url', song.coverImageKey],
+    queryFn: () => getCoverImageUrlFn({ data: { coverKey: song.coverImageKey! } }),
+    enabled: !!song.coverImageKey,
   });
 
-  const displayCoverUrl = shouldFetchCoverUrl ? coverUrlData?.coverUrl : song.coverImageUrl;
+  const displayAudioUrl = audioUrlData?.audioUrl;
+  const displayCoverUrl = coverUrlData?.coverUrl;
   const songInPlaylist = isInPlaylist(song.id);
 
   const handleAddToPlaylistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToPlaylist(song);
+    
+    // Convert Song to PlaylistSong with URLs
+    const playlistSong: PlaylistSong = {
+      ...song,
+      audioUrl: displayAudioUrl,
+      coverImageUrl: displayCoverUrl,
+    };
+    
+    addToPlaylist(playlistSong);
   };
 
   return (

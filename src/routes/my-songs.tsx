@@ -1,8 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Music, Plus, Trash2, Edit, Play, MoreVertical, Upload, Home } from "lucide-react";
-import { toast } from "sonner";
-import { SongCard } from "~/components/SongCard";
+import {
+  Music,
+  Plus,
+  Trash2,
+  Edit,
+  Play,
+  MoreVertical,
+  Upload,
+  Home,
+} from "lucide-react";
 import { SongGridSkeleton } from "~/components/SongGridSkeleton";
 import { EmptyState } from "~/components/EmptyState";
 import { Page } from "~/components/Page";
@@ -31,7 +38,9 @@ function MySongs() {
   const deleteSongMutation = useDeleteSong();
 
   const handleDeleteSong = async (songId: string, songTitle: string) => {
-    const confirmed = window.confirm(`Are you sure you want to delete "${songTitle}"? This action cannot be undone.`);
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${songTitle}"? This action cannot be undone.`
+    );
     if (confirmed) {
       try {
         await deleteSongMutation.mutateAsync(songId);
@@ -50,16 +59,35 @@ function MySongs() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      published: { label: "Public", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-      private: { label: "Private", className: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400" },
-      unlisted: { label: "Unlisted", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-      processing: { label: "Processing", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
+      published: {
+        label: "Public",
+        className:
+          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+      },
+      private: {
+        label: "Private",
+        className:
+          "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+      },
+      unlisted: {
+        label: "Unlisted",
+        className:
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+      },
+      processing: {
+        label: "Processing",
+        className:
+          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+      },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.private;
-    
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.private;
+
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+      <span
+        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.className}`}
+      >
         {config.label}
       </span>
     );
@@ -68,10 +96,7 @@ function MySongs() {
   return (
     <Page>
       <div className="space-y-8">
-        <AppBreadcrumb items={[
-          { label: "Home", href: "/", icon: Home },
-          { label: "My Songs" }
-        ]} />
+        <AppBreadcrumb items={[{ label: "My Songs", icon: Music }]} />
         <div className="flex items-center justify-between">
           <PageTitle
             title="My Songs"
@@ -91,13 +116,17 @@ function MySongs() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {songs.length} {songs.length === 1 ? "song" : "songs"} in your library
+                {songs.length} {songs.length === 1 ? "song" : "songs"} in your
+                library
               </p>
             </div>
-            
+
             <div className="grid gap-4">
               {songs.map((song) => (
-                <div key={song.id} className="group relative bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={song.id}
+                  className="group relative bg-card border rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center gap-4">
                     {/* Cover Image */}
                     <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
@@ -138,12 +167,11 @@ function MySongs() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
-                        <Link to={`/song/${song.id}`}>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link 
+                          to={`/song/${song.id}`}
+                          state={{ from: '/my-songs' }}
+                        >
                           <Play className="h-4 w-4 mr-1" />
                           View
                         </Link>
@@ -157,19 +185,26 @@ function MySongs() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link to={`/song/${song.id}/edit`}>
+                            <Link 
+                              to={`/song/${song.id}/edit`}
+                              state={{ from: '/my-songs' }}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </Link>
                           </DropdownMenuItem>
-                          
+
                           <DropdownMenuItem
-                            onClick={() => handleDeleteSong(song.id, song.title)}
+                            onClick={() =>
+                              handleDeleteSong(song.id, song.title)
+                            }
                             className="text-destructive focus:text-destructive"
                             disabled={deleteSongMutation.isPending}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {deleteSongMutation.isPending ? "Deleting..." : "Delete"}
+                            {deleteSongMutation.isPending
+                              ? "Deleting..."
+                              : "Delete"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

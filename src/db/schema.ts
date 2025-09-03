@@ -79,8 +79,6 @@ export const song = pgTable("song", {
   album: text("album"),
   genre: text("genre"),
   description: text("description"),
-  audioUrl: text("audio_url").notNull(),
-  coverImageUrl: text("cover_image_url"),
   audioKey: text("audio_key"),
   coverImageKey: text("cover_image_key"),
   status: text("status")

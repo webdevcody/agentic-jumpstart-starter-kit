@@ -1,6 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Image, Loader2, Save, ArrowLeft, Home, Search, Music } from "lucide-react";
+import { Image, Loader2, Save, ArrowLeft, Home, Search, Music, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,6 +31,69 @@ import {
 } from "~/components/ui/form";
 import { AppBreadcrumb } from "~/components/AppBreadcrumb";
 import { Link } from "@tanstack/react-router";
+import { useSongBreadcrumbs } from "~/hooks/useSongBreadcrumbs";
+import { useDeleteSong } from "~/hooks/useSongs";
+
+// Component to display current cover image with presigned URL
+function CoverImageDisplay({ 
+  coverImageKey, 
+  onImageSelect, 
+  disabled 
+}: { 
+  coverImageKey: string;
+  onImageSelect: (files: File[]) => void;
+  disabled: boolean;
+}) {
+  const { data: coverUrlData } = useQuery({
+    queryKey: ["cover-url", coverImageKey],
+    queryFn: () => getCoverImageUrlFn({ data: { coverKey: coverImageKey } }),
+    enabled: !!coverImageKey,
+  });
+
+  return (
+    <div className="relative">
+      <div className="w-48 h-48 rounded-lg overflow-hidden bg-muted relative group cursor-pointer">
+        {coverUrlData?.coverUrl ? (
+          <img
+            src={coverUrlData.coverUrl}
+            alt="Current cover"
+            className="w-full h-full object-cover transition-opacity group-hover:opacity-75"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+            <Image className="h-16 w-16 text-muted-foreground/50" />
+          </div>
+        )}
+        {/* Dropzone Overlay */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div className="text-white text-center">
+            <Image className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm font-medium">
+              Click to change
+            </p>
+            <p className="text-xs opacity-80">or drag & drop</p>
+          </div>
+        </div>
+        {/* Hidden file input */}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length > 0) {
+              onImageSelect(files);
+            }
+          }}
+          className="absolute inset-0 opacity-0 cursor-pointer"
+          disabled={disabled}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground mt-2 text-center">
+        Current image
+      </p>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/song/$id/edit")({
   loader: async ({ context: { queryClient }, params: { id } }) => {
@@ -84,6 +147,9 @@ function EditSong() {
   const { data: song, isLoading, error } = useQuery(getSongByIdQuery(id));
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const breadcrumbItems = useSongBreadcrumbs(song?.title || "Song", "edit");
+  const deleteSongMutation = useDeleteSong();
 
   const [editState, setEditState] = useState<EditState>({
     coverImageFile: null,
@@ -129,9 +195,9 @@ function EditSong() {
   // Redirect if user can't edit
   useEffect(() => {
     if (song && !canEdit) {
-      throw redirect({ to: `/song/${id}` });
+      navigate({ to: `/song/${id}` });
     }
-  }, [song, canEdit, id]);
+  }, [song, canEdit, id, navigate]);
 
   const updateSongMutation = useMutation({
     mutationFn: updateSongFn,
@@ -272,6 +338,26 @@ function EditSong() {
     updateSongMutation.mutate({ data: updateData });
   };
 
+  const handleDeleteSong = async () => {
+    if (!song || !canEdit) {
+      toast.error("You are not authorized to delete this song");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${song.title}"? This action cannot be undone.`
+    );
+    
+    if (confirmed) {
+      try {
+        await deleteSongMutation.mutateAsync(id);
+        navigate({ to: "/my-songs" });
+      } catch (error) {
+        // Error handling is done in the hook
+      }
+    }
+  };
+
   const isFormDisabled = updateSongMutation.isPending || editState.isUploading;
 
   if (isLoading) {
@@ -328,12 +414,7 @@ function EditSong() {
   return (
     <Page>
       <div className="space-y-8">
-        <AppBreadcrumb items={[
-          { label: "Home", href: "/", icon: Home },
-          { label: "Songs", href: "/browse", icon: Music },
-          { label: song?.title || "Song", href: `/song/${id}` },
-          { label: "Edit" }
-        ]} />
+        <AppBreadcrumb items={breadcrumbItems} />
         <PageTitle
           title="Edit Song"
           description="Update your song information"
@@ -345,215 +426,199 @@ function EditSong() {
               onSubmit={form.handleSubmit(onSubmit)}
               className="mt-8 space-y-8"
             >
-              {/* Audio File Upload */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Music className="h-5 w-5" />
-                      Replace Audio File
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Upload a new audio file to replace the current one (optional)
-                    </p>
-                  </div>
-                  {editState.audioFile && !editState.isUploading && (
-                    <div className="flex items-center gap-2 text-green-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium">Ready</span>
+              {/* File Upload Sections */}
+              <div className="grid gap-8 lg:grid-cols-2">
+                {/* Audio File Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Music className="h-5 w-5" />
+                        Replace Audio File
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Upload a new audio file to replace the current one (optional)
+                      </p>
                     </div>
-                  )}
-                </div>
-                
-                <FileUpload
-                  onFilesSelected={handleAudioFileSelect}
-                  accept={{
-                    'audio/*': ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
-                  }}
-                  maxSize={100 * 1024 * 1024} // 100MB
-                  disabled={isFormDisabled}
-                />
-
-                {editState.audioFile && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                        <Music className="h-4 w-4 text-blue-600" />
+                    {editState.audioFile && !editState.isUploading && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium">Ready</span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                          New audio file selected: {editState.audioFile.name}
-                        </p>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">
-                          This will replace the current audio file when you save
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditState(prev => ({ ...prev, audioFile: null }))}
-                        className="text-blue-600 hover:text-blue-700"
-                        disabled={isFormDisabled}
-                      >
-                        Remove
-                      </Button>
-                    </div>
+                    )}
                   </div>
-                )}
+                  
+                  <FileUpload
+                    onFilesSelected={handleAudioFileSelect}
+                    accept={{
+                      'audio/*': ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
+                    }}
+                    maxSize={100 * 1024 * 1024} // 100MB
+                    disabled={isFormDisabled}
+                    hideSelectedFiles={!!editState.audioFile}
+                  />
 
-                {editState.isUploading && editState.audioProgress > 0 && (
-                  <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Uploading audio...</span>
-                      </div>
-                      <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{editState.audioProgress}%</span>
-                    </div>
-                    <div className="w-full bg-blue-100 dark:bg-blue-900/50 rounded-full h-3">
-                      <div 
-                        className="bg-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2" 
-                        style={{ width: `${editState.audioProgress}%` }}
-                      >
-                        <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Cover Image Upload with Preview */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Image className="h-5 w-5" />
-                      {song.coverImageUrl
-                        ? "Update Cover Image"
-                        : "Add Cover Image"}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {song.coverImageUrl
-                        ? "Click on the image or drop a new file to update"
-                        : "Upload a cover image (optional)"}
-                    </p>
-                  </div>
-                  {editState.coverImageFile && !editState.isUploading && (
-                    <div className="flex items-center gap-2 text-green-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium">Ready</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-6">
-                  {/* Current Cover Image with Dropzone Overlay */}
-                  {song.coverImageUrl && !editState.coverImageFile && (
-                    <div className="relative">
-                      <div className="w-48 h-48 rounded-lg overflow-hidden bg-muted relative group cursor-pointer">
-                        <img
-                          src={song.coverImageUrl}
-                          alt="Current cover"
-                          className="w-full h-full object-cover transition-opacity group-hover:opacity-75"
-                        />
-                        {/* Dropzone Overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="text-white text-center">
-                            <Image className="h-8 w-8 mx-auto mb-2" />
-                            <p className="text-sm font-medium">
-                              Click to change
-                            </p>
-                            <p className="text-xs opacity-80">or drag & drop</p>
-                          </div>
+                  {editState.audioFile && (
+                    <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                          <Music className="h-4 w-4 text-blue-600" />
                         </div>
-                        {/* Hidden file input */}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files || []);
-                            if (files.length > 0) {
-                              handleCoverImageSelect(files);
-                            }
-                          }}
-                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            New audio file selected: {editState.audioFile.name}
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                            This will replace the current audio file when you save
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditState(prev => ({ ...prev, audioFile: null }))}
+                          className="text-blue-600 hover:text-blue-700"
                           disabled={isFormDisabled}
-                        />
+                        >
+                          Remove
+                        </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Current image
-                      </p>
+                      <div className="pt-2">
+                        <audio
+                          controls
+                          className="w-full h-8"
+                          src={URL.createObjectURL(editState.audioFile)}
+                          preload="metadata"
+                        >
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
                     </div>
                   )}
 
-                  {/* New Cover Image Preview */}
-                  {editState.coverImageFile && (
-                    <div className="relative">
-                      <div className="w-48 h-48 rounded-lg overflow-hidden bg-muted">
-                        <img
-                          src={URL.createObjectURL(editState.coverImageFile)}
-                          alt="New cover preview"
-                          className="w-full h-full object-cover"
-                        />
+                  {editState.isUploading && editState.audioProgress > 0 && (
+                    <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Uploading audio...</span>
+                        </div>
+                        <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{editState.audioProgress}%</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2 text-center">
-                        New image
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setEditState((prev) => ({
-                            ...prev,
-                            coverImageFile: null,
-                          }))
-                        }
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                        disabled={isFormDisabled}
-                      >
-                        ×
-                      </Button>
+                      <div className="w-full bg-blue-100 dark:bg-blue-900/50 rounded-full h-3">
+                        <div 
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2" 
+                          style={{ width: `${editState.audioProgress}%` }}
+                        >
+                          <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
+                        </div>
+                      </div>
                     </div>
                   )}
-
-                  {/* File Upload Area (when no current image or alongside current image) */}
-                  <div className="flex-1 min-w-64">
-                    <FileUpload
-                      onFilesSelected={handleCoverImageSelect}
-                      accept={{
-                        "image/*": [".jpg", ".jpeg", ".png", ".webp"],
-                      }}
-                      maxSize={10 * 1024 * 1024} // 10MB
-                      disabled={isFormDisabled}
-                    />
-                  </div>
                 </div>
 
-                {editState.isUploading && editState.coverProgress > 0 && (
-                  <div className="space-y-3 p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                        <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                          Uploading cover...
+                {/* Cover Image Upload with Preview */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Image className="h-5 w-5" />
+                        {song.coverImageKey
+                          ? "Update Cover Image"
+                          : "Add Cover Image"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {song.coverImageKey
+                          ? "Click on the image or drop a new file to update"
+                          : "Upload a cover image (optional)"}
+                      </p>
+                    </div>
+                    {editState.coverImageFile && !editState.isUploading && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium">Ready</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-6">
+                    {/* Current Cover Image with Dropzone Overlay */}
+                    {song.coverImageKey && !editState.coverImageFile && (
+                      <CoverImageDisplay 
+                        coverImageKey={song.coverImageKey}
+                        onImageSelect={handleCoverImageSelect}
+                        disabled={isFormDisabled}
+                      />
+                    )}
+
+                    {/* New Cover Image Preview */}
+                    {editState.coverImageFile && (
+                      <div className="relative">
+                        <div className="w-48 h-48 rounded-lg overflow-hidden bg-muted">
+                          <img
+                            src={URL.createObjectURL(editState.coverImageFile)}
+                            alt="New cover preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          New image
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setEditState((prev) => ({
+                              ...prev,
+                              coverImageFile: null,
+                            }))
+                          }
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                          disabled={isFormDisabled}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* File Upload Area (when no current image or alongside current image) */}
+                    <div className="flex-1 min-w-64">
+                      <FileUpload
+                        onFilesSelected={handleCoverImageSelect}
+                        accept={{
+                          "image/*": [".jpg", ".jpeg", ".png", ".webp"],
+                        }}
+                        maxSize={10 * 1024 * 1024} // 10MB
+                        disabled={isFormDisabled}
+                      />
+                    </div>
+                  </div>
+
+                  {editState.isUploading && editState.coverProgress > 0 && (
+                    <div className="space-y-3 p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                            Uploading cover...
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                          {editState.coverProgress}%
                         </span>
                       </div>
-                      <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
-                        {editState.coverProgress}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-purple-100 dark:bg-purple-900/50 rounded-full h-3">
-                      <div
-                        className="bg-purple-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
-                        style={{ width: `${editState.coverProgress}%` }}
-                      >
-                        <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
+                      <div className="w-full bg-purple-100 dark:bg-purple-900/50 rounded-full h-3">
+                        <div
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
+                          style={{ width: `${editState.coverProgress}%` }}
+                        >
+                          <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Song Information Form */}
@@ -698,7 +763,7 @@ function EditSong() {
                 />
               </div>
 
-              {/* Submit Button */}
+              {/* Submit and Delete Buttons */}
               <div className="flex flex-col gap-4 pt-6 border-t border-border">
                 <Button
                   type="submit"
@@ -708,7 +773,7 @@ function EditSong() {
                   {editState.isUploading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Uploading Cover...
+                      Uploading...
                     </>
                   ) : updateSongMutation.isPending ? (
                     <>
@@ -719,6 +784,26 @@ function EditSong() {
                     <>
                       <Save className="h-4 w-4 mr-2" />
                       Update Song
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="w-full h-12 text-base font-medium"
+                  onClick={handleDeleteSong}
+                  disabled={isFormDisabled || deleteSongMutation.isPending}
+                >
+                  {deleteSongMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Song
                     </>
                   )}
                 </Button>

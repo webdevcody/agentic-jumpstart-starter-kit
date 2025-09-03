@@ -13,11 +13,11 @@ async function generatePresignedUrls(song: Song): Promise<SongWithUrls> {
   
   const audioUrl = song.audioKey 
     ? await storage.getPresignedUrl(song.audioKey)
-    : song.audioUrl; // Fallback for existing songs
+    : '';
   
   const coverImageUrl = song.coverImageKey 
     ? await storage.getPresignedUrl(song.coverImageKey)
-    : song.coverImageUrl || undefined;
+    : undefined;
   
   return {
     ...song,

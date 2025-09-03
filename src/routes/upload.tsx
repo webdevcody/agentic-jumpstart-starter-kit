@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Music, Upload as UploadIcon, Image, Loader2, Home } from "lucide-react";
+import {
+  Music,
+  Upload as UploadIcon,
+  Image,
+  Loader2,
+  Home,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -110,7 +116,7 @@ function Upload() {
 
   const handleAudioFileSelect = useCallback((files: File[]) => {
     if (files.length > 0) {
-      setUploadState(prev => ({
+      setUploadState((prev) => ({
         ...prev,
         audioFile: files[0],
       }));
@@ -119,7 +125,7 @@ function Upload() {
 
   const handleCoverImageSelect = useCallback((files: File[]) => {
     if (files.length > 0) {
-      setUploadState(prev => ({
+      setUploadState((prev) => ({
         ...prev,
         coverImageFile: files[0],
       }));
@@ -132,21 +138,21 @@ function Upload() {
       return null;
     }
 
-    setUploadState(prev => ({ ...prev, isUploading: true }));
+    setUploadState((prev) => ({ ...prev, isUploading: true }));
 
     try {
       // Upload audio file
       const audioResult = await uploadAudioWithPresignedUrl(
         uploadState.audioFile,
         (progress: UploadProgress) => {
-          setUploadState(prev => ({
+          setUploadState((prev) => ({
             ...prev,
             audioProgress: progress.percentage,
           }));
         }
       );
 
-      setUploadState(prev => ({
+      setUploadState((prev) => ({
         ...prev,
         audioKey: audioResult.audioKey,
         songId: audioResult.songId,
@@ -161,14 +167,14 @@ function Upload() {
           audioResult.songId,
           uploadState.coverImageFile,
           (progress: UploadProgress) => {
-            setUploadState(prev => ({
+            setUploadState((prev) => ({
               ...prev,
               coverProgress: progress.percentage,
             }));
           }
         );
         coverKey = coverResult.coverKey;
-        setUploadState(prev => ({ ...prev, coverKey }));
+        setUploadState((prev) => ({ ...prev, coverKey }));
       }
 
       return {
@@ -182,7 +188,7 @@ function Upload() {
       toast.error("Failed to upload files");
       return null;
     } finally {
-      setUploadState(prev => ({ ...prev, isUploading: false }));
+      setUploadState((prev) => ({ ...prev, isUploading: false }));
     }
   };
 
@@ -190,45 +196,50 @@ function Upload() {
     const uploadResult = await uploadFiles();
     if (!uploadResult) return;
 
-    createSongMutation.mutate({
-      ...data,
-      audioKey: uploadResult.audioKey,
-      coverImageKey: uploadResult.coverImageKey,
-      duration: uploadResult.duration,
-    }, {
-      onSuccess: () => {
-        form.reset();
-        setUploadState({
-          audioFile: null,
-          coverImageFile: null,
-          audioProgress: 0,
-          coverProgress: 0,
-          isUploading: false,
-          audioKey: null,
-          coverKey: null,
-          songId: null,
-          duration: null,
-        });
+    createSongMutation.mutate(
+      {
+        ...data,
+        audioKey: uploadResult.audioKey,
+        coverImageKey: uploadResult.coverImageKey,
+        duration: uploadResult.duration,
       },
-    });
+      {
+        onSuccess: () => {
+          form.reset();
+          setUploadState({
+            audioFile: null,
+            coverImageFile: null,
+            audioProgress: 0,
+            coverProgress: 0,
+            isUploading: false,
+            audioKey: null,
+            coverKey: null,
+            songId: null,
+            duration: null,
+          });
+        },
+      }
+    );
   };
 
-  const isFormDisabled = createSongMutation.isPending || uploadState.isUploading;
+  const isFormDisabled =
+    createSongMutation.isPending || uploadState.isUploading;
 
   return (
     <Page>
       <div className="space-y-8">
-        <AppBreadcrumb items={[
-          { label: "Home", href: "/", icon: Home },
-          { label: "Upload" }
-        ]} />
+        <AppBreadcrumb
+          items={[
+            { label: "My Songs", href: "/my-songs", icon: Music },
+            { label: "Upload" },
+          ]}
+        />
         <PageTitle
           title="Upload Song"
           description="Share your music with the community"
-          center
         />
 
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
@@ -255,11 +266,18 @@ function Upload() {
                       </div>
                     )}
                   </div>
-                  
+
                   <FileUpload
                     onFilesSelected={handleAudioFileSelect}
                     accept={{
-                      'audio/*': ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
+                      "audio/*": [
+                        ".mp3",
+                        ".wav",
+                        ".flac",
+                        ".aac",
+                        ".ogg",
+                        ".m4a",
+                      ],
                     }}
                     maxSize={100 * 1024 * 1024} // 100MB
                     disabled={isFormDisabled}
@@ -270,13 +288,17 @@ function Upload() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Uploading audio...</span>
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            Uploading audio...
+                          </span>
                         </div>
-                        <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{uploadState.audioProgress}%</span>
+                        <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                          {uploadState.audioProgress}%
+                        </span>
                       </div>
                       <div className="w-full bg-blue-100 dark:bg-blue-900/50 rounded-full h-3">
-                        <div 
-                          className="bg-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2" 
+                        <div
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
                           style={{ width: `${uploadState.audioProgress}%` }}
                         >
                           <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
@@ -305,11 +327,11 @@ function Upload() {
                       </div>
                     )}
                   </div>
-                  
+
                   <FileUpload
                     onFilesSelected={handleCoverImageSelect}
                     accept={{
-                      'image/*': ['.jpg', '.jpeg', '.png', '.webp']
+                      "image/*": [".jpg", ".jpeg", ".png", ".webp"],
                     }}
                     maxSize={10 * 1024 * 1024} // 10MB
                     disabled={isFormDisabled}
@@ -320,13 +342,17 @@ function Upload() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Uploading cover...</span>
+                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                            Uploading cover...
+                          </span>
                         </div>
-                        <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{uploadState.coverProgress}%</span>
+                        <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                          {uploadState.coverProgress}%
+                        </span>
                       </div>
                       <div className="w-full bg-purple-100 dark:bg-purple-900/50 rounded-full h-3">
-                        <div 
-                          className="bg-purple-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2" 
+                        <div
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
                           style={{ width: `${uploadState.coverProgress}%` }}
                         >
                           <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
@@ -521,17 +547,25 @@ function Upload() {
                     </>
                   )}
                 </Button>
-                
+
                 {!uploadState.audioFile ? (
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Music className="h-4 w-4" />
-                    <p className="text-sm">Please select an audio file to continue</p>
+                    <p className="text-sm">
+                      Please select an audio file to continue
+                    </p>
                   </div>
-                ) : uploadState.audioFile && !uploadState.isUploading && !createSongMutation.isPending && (
-                  <div className="flex items-center justify-center gap-2 text-green-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <p className="text-sm font-medium">Ready to upload your song!</p>
-                  </div>
+                ) : (
+                  uploadState.audioFile &&
+                  !uploadState.isUploading &&
+                  !createSongMutation.isPending && (
+                    <div className="flex items-center justify-center gap-2 text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <p className="text-sm font-medium">
+                        Ready to upload your song!
+                      </p>
+                    </div>
+                  )
                 )}
               </div>
             </form>

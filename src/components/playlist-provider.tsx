@@ -1,10 +1,19 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Song } from "~/db/schema";
+import type { SongWithUrls } from "~/data-access/songs";
 
 export interface PlaylistSong extends Song {
   audioUrl?: string;
   coverImageUrl?: string | null;
   lastPlayedAt?: number; // Timestamp for shuffle smart selection
+}
+
+// Helper to convert SongWithUrls to PlaylistSong
+export function toPlaylistSong(song: SongWithUrls): PlaylistSong {
+  return {
+    ...song,
+    lastPlayedAt: undefined,
+  };
 }
 
 type PlaylistProviderProps = {
@@ -223,7 +232,7 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
     
     // Create weights for each song based on when they were last played
     const songWeights = playlist.map((song, index) => {
-      if (index === currentIndex) return 0; // Don't repeat current song
+      if (index === currentIndex) return null; // Don't repeat current song
       
       const lastPlayed = song.lastPlayedAt || 0;
       const timeSincePlay = now - lastPlayed;
@@ -239,7 +248,7 @@ export function PlaylistProvider({ children }: PlaylistProviderProps) {
       }
       
       return { index, weight };
-    }).filter(item => item.weight > 0);
+    }).filter((item): item is { index: number; weight: number } => item !== null && item.weight > 0);
     
     if (songWeights.length === 0) {
       // All songs played recently, just pick random
