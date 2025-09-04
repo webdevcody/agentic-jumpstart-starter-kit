@@ -7,6 +7,7 @@ import {
   findPlaylistByIdWithSongs,
   addSongToPlaylist,
   removeSongFromPlaylist,
+  reorderPlaylistSongs,
   checkPlaylistOwnership,
   findPublicPlaylists,
 } from "~/data-access/playlists";
@@ -291,4 +292,35 @@ export const loadPlaylistWithUrlsFn = createServerFn({
       playlist,
       songsWithUrls,
     };
+  });
+
+export const reorderPlaylistSongsFn = createServerFn({
+  method: "POST",
+})
+  .validator(
+    z.object({
+      playlistId: z.string(),
+      songOrders: z.array(
+        z.object({
+          songId: z.string(),
+          position: z.number(),
+        })
+      ),
+    })
+  )
+  .middleware([authenticatedMiddleware])
+  .handler(async ({ data, context }) => {
+    const { playlistId, songOrders } = data;
+
+    const isOwner = await checkPlaylistOwnership(playlistId, context.userId);
+    if (!isOwner) {
+      throw new Error("Unauthorized: You can only reorder your own playlists");
+    }
+
+    const success = await reorderPlaylistSongs(playlistId, songOrders);
+    if (!success) {
+      throw new Error("Failed to reorder playlist songs");
+    }
+
+    return { success: true };
   });

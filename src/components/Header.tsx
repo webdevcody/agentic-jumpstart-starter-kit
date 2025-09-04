@@ -11,6 +11,7 @@ import {
   List,
   Music,
   ListMusic,
+  Upload,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useUserAvatar } from "~/hooks/useUserAvatar";
@@ -77,6 +78,15 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
                 {link.title}
               </Link>
             ))}
+            {session && (
+              <Link
+                to="/upload"
+                className="flex items-center gap-2 transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                <Upload className="h-4 w-4" />
+                Upload
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -114,6 +124,14 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
                 ))}
                 {session && (
                   <>
+                    <Link
+                      to="/upload"
+                      className="flex items-center gap-2 px-2 py-1 text-lg transition-colors hover:text-foreground/80 text-foreground/60"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Upload className="h-5 w-5" />
+                      Upload
+                    </Link>
                     <Link
                       to="/my-songs"
                       className="block px-2 py-1 text-lg transition-colors hover:text-foreground/80 text-foreground/60"
@@ -164,12 +182,6 @@ export function Header({ onOpenPlaylist }: HeaderProps = {}) {
               </div>
             ) : session ? (
               <>
-                <Link
-                  className={buttonVariants({ variant: "default" })}
-                  to="/upload"
-                >
-                  Upload
-                </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

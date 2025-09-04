@@ -9,6 +9,7 @@ import {
   addSongToSelectedPlaylistFn,
   getOrCreateDefaultPlaylistFn,
   loadPlaylistWithUrlsFn,
+  reorderPlaylistSongsFn,
 } from "~/fn/playlists";
 import {
   getPlaylistsQuery,
@@ -250,6 +251,24 @@ export function useLoadPlaylistWithUrls() {
     mutationFn: loadPlaylistWithUrlsFn,
     onError: (error: Error) => {
       toast.error(error.message || "Failed to load playlist");
+    },
+  });
+}
+
+export function useReorderPlaylistSongs() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { playlistId: string; songOrders: { songId: string; position: number }[] }) =>
+      reorderPlaylistSongsFn({ data }),
+    onSuccess: (_, { playlistId }) => {
+      // Invalidate playlist data to refetch with new order
+      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+    },
+    onError: (error) => {
+      toast.error("Failed to reorder songs", {
+        description: getErrorMessage(error),
+      });
     },
   });
 }

@@ -1,9 +1,1 @@
-Suggest improvements to the following component or page by referencing the existing design documentation and structure. Consider best practices in UX, UI consistency, and accessibility (a11y). For each suggestion, explain how it aligns with the current design system (see docs/design.md) and how it enhances usability, accessibility, or visual coherence. Where possible, provide concrete recommendations or code snippets for:
-
-- Improving layout, spacing, and visual hierarchy
-- Enhancing color contrast and readability
-- Ensuring keyboard and screen reader accessibility
-- Aligning with the established component patterns and theming
-- Supporting responsive and mobile-friendly design
-
-Reference specific sections or patterns from the design docs to justify your suggestions. Apply these changes for me.
+you are a professional graphic designer and user experience person, please analyze the attached image which is for the file I'm currently looking at and think about a better way design and style this page to make it a better user experience for the user. I will provide an overview of the main intent of this page, but please plan out better information hierachy to help make this page achieve a primary goal and secondary goal, include empty state place holders, loading skeletons, etc:
