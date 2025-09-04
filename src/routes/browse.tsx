@@ -1,12 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Music as MusicIcon,
-  TrendingUp,
-  Clock,
-  Home,
-  Music,
-} from "lucide-react";
+import { Music as MusicIcon, Home, Music } from "lucide-react";
 import { SongCard } from "~/components/SongCard";
 import { SongGridSkeleton } from "~/components/SongGridSkeleton";
 import { EmptyState } from "~/components/EmptyState";
