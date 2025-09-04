@@ -4,14 +4,11 @@ import { getUserAvatarQuery } from "~/queries/user";
 
 export function useUserAvatar() {
   const { data: session } = authClient.useSession();
-  
-  const avatarQuery = useQuery({
-    ...getUserAvatarQuery(session?.user?.image || null),
-    onError: (error) => {
-      console.error('useUserAvatar query error:', error);
-    }
-  });
-  
+
+  const avatarQuery = useQuery(
+    getUserAvatarQuery(session?.user?.image || null)
+  );
+
   return {
     avatarUrl: avatarQuery.data?.imageUrl || null,
     isLoading: avatarQuery.isLoading,

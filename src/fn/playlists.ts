@@ -25,6 +25,7 @@ import {
   PlaylistNotFoundError,
   UnauthorizedPlaylistAccessError,
 } from "~/use-cases/deletePlaylistUseCase";
+import { getAudioUrlFn, getCoverImageUrlFn } from "./audio-storage";
 
 export const getPlaylistsFn = createServerFn()
   .middleware([authenticatedMiddleware])
@@ -247,4 +248,47 @@ export const getLastPlaylistFn = createServerFn()
     }
 
     return null;
+  });
+
+export const loadPlaylistWithUrlsFn = createServerFn({
+  method: "GET",
+})
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => {
+    const playlist = await findPlaylistByIdWithSongs(data.id);
+    if (!playlist) {
+      throw new Error("Playlist not found");
+    }
+
+    if (playlist.songs.length === 0) {
+      return {
+        playlist,
+        songsWithUrls: [],
+      };
+    }
+
+    // Convert songs to include URLs
+    const songsWithUrls = await Promise.all(
+      playlist.songs.map(async (song) => {
+        const [audioUrlResult, coverUrlResult] = await Promise.all([
+          song.audioKey
+            ? getAudioUrlFn({ data: { audioKey: song.audioKey } })
+            : Promise.resolve(null),
+          song.coverImageKey
+            ? getCoverImageUrlFn({ data: { coverKey: song.coverImageKey } })
+            : Promise.resolve(null),
+        ]);
+
+        return {
+          ...song,
+          audioUrl: audioUrlResult?.audioUrl || "",
+          coverImageUrl: coverUrlResult?.coverUrl || null,
+        };
+      })
+    );
+
+    return {
+      playlist,
+      songsWithUrls,
+    };
   });

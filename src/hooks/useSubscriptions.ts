@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { 
+import {
   createCheckoutSessionFn,
   createPortalSessionFn,
-  cancelSubscriptionFn
+  cancelSubscriptionFn,
 } from "~/fn/subscriptions";
 import { getUserPlanQuery } from "~/queries/subscription";
 import { getErrorMessage } from "~/utils/error";
@@ -19,7 +19,7 @@ export function useUserPlan(enabled = true) {
 // Mutation hooks
 export function useCreateCheckoutSession() {
   return useMutation({
-    mutationFn: (priceId: string) => 
+    mutationFn: (priceId: string) =>
       createCheckoutSessionFn({ data: { priceId } }),
     onSuccess: (result) => {
       if (result.success && result.data?.sessionUrl) {
@@ -62,15 +62,16 @@ export function useCreatePortalSession() {
 
 export function useCancelSubscription() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: cancelSubscriptionFn,
     onSuccess: (result) => {
       if (result.success) {
         toast.success("Subscription cancelled", {
-          description: "Your subscription will be cancelled at the end of the current period.",
+          description:
+            "Your subscription will be cancelled at the end of the current period.",
         });
-        
+
         // Invalidate user plan to refresh subscription status
         queryClient.invalidateQueries({ queryKey: ["user-plan"] });
       } else {
@@ -94,23 +95,23 @@ export function useSubscriptionManagement() {
   const createCheckoutSession = useCreateCheckoutSession();
   const createPortalSession = useCreatePortalSession();
   const cancelSubscription = useCancelSubscription();
-  
+
   const refreshUserPlan = () => {
     queryClient.invalidateQueries({ queryKey: ["user-plan"] });
   };
-  
+
   const handleUpgrade = (priceId: string) => {
     createCheckoutSession.mutate(priceId);
   };
-  
+
   const handleManageSubscription = () => {
-    createPortalSession.mutate();
+    createPortalSession.mutate({ data: undefined });
   };
-  
+
   const handleCancelSubscription = () => {
-    cancelSubscription.mutate();
+    cancelSubscription.mutate({ data: undefined });
   };
-  
+
   return {
     userPlan,
     createCheckoutSession,
@@ -120,9 +121,10 @@ export function useSubscriptionManagement() {
     handleUpgrade,
     handleManageSubscription,
     handleCancelSubscription,
-    isLoading: userPlan.isLoading || 
-               createCheckoutSession.isPending || 
-               createPortalSession.isPending || 
-               cancelSubscription.isPending,
+    isLoading:
+      userPlan.isLoading ||
+      createCheckoutSession.isPending ||
+      createPortalSession.isPending ||
+      cancelSubscription.isPending,
   };
 }

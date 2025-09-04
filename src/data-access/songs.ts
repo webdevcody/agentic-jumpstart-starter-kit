@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { database } from "~/db";
 import { song, type Song, type CreateSongData, type UpdateSongData } from "~/db/schema";
 import { getStorage } from "~/utils/storage";
@@ -117,4 +117,17 @@ export async function deleteSong(id: string): Promise<boolean> {
     .returning();
 
   return result.length > 0;
+}
+
+export async function incrementPlayCount(id: string): Promise<Song | null> {
+  const [updatedSong] = await database
+    .update(song)
+    .set({
+      playCount: sql`${song.playCount} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(eq(song.id, id))
+    .returning();
+
+  return updatedSong || null;
 }

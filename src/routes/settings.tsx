@@ -30,7 +30,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 function ProfileSettings() {
-  const { data: session, refetch: refetchSession } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const [displayName, setDisplayName] = useState(session?.user?.name || "");
   const [isUploading, setIsUploading] = useState(false);
   const { avatarUrl } = useUserAvatar();
@@ -197,16 +197,22 @@ function SettingsPage() {
 
   const handleUpgrade = (priceId: string) => {
     setIsLoading(true);
-    checkoutMutation.mutate({ data: { priceId } }, {
-      onSettled: () => setIsLoading(false),
-    });
+    checkoutMutation.mutate(
+      { data: { priceId } },
+      {
+        onSettled: () => setIsLoading(false),
+      }
+    );
   };
 
   const handleManageBilling = () => {
     setIsLoading(true);
-    portalMutation.mutate({ data: undefined }, {
-      onSettled: () => setIsLoading(false),
-    });
+    portalMutation.mutate(
+      { data: undefined },
+      {
+        onSettled: () => setIsLoading(false),
+      }
+    );
   };
 
   const handleCancelSubscription = () => {
@@ -216,9 +222,12 @@ function SettingsPage() {
       )
     ) {
       setIsLoading(true);
-      cancelMutation.mutate({ data: undefined }, {
-        onSettled: () => setIsLoading(false),
-      });
+      cancelMutation.mutate(
+        { data: undefined },
+        {
+          onSettled: () => setIsLoading(false),
+        }
+      );
     }
   };
 
@@ -280,10 +289,12 @@ function SettingsPage() {
   return (
     <Page>
       <div className="space-y-8">
-        <AppBreadcrumb items={[
-          { label: "Home", href: "/", icon: Home },
-          { label: "Settings" }
-        ]} />
+        <AppBreadcrumb
+          items={[
+            { label: "Home", href: "/", icon: Home },
+            { label: "Settings" },
+          ]}
+        />
         <PageTitle title="Settings" />
       </div>
 

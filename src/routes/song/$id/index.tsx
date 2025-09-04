@@ -23,6 +23,7 @@ import { authClient } from "~/lib/auth-client";
 import { usePlaylist } from "~/components/playlist-provider";
 import { useSongBreadcrumbs } from "~/hooks/useSongBreadcrumbs";
 import { useHeartStatus, useToggleHeart } from "~/hooks/useHearts";
+import { SongPreviewPlayer } from "~/components/SongPreviewPlayer";
 
 export const Route = createFileRoute("/song/$id/")({
   loader: ({ context: { queryClient }, params: { id } }) => {
@@ -309,6 +310,18 @@ function SongDetail() {
                 )}
               </div>
             </div>
+
+            {/* Song Preview Player */}
+            {displayAudioUrl && (
+              <div className="max-w-md">
+                <SongPreviewPlayer
+                  audioUrl={displayAudioUrl}
+                  title={song.title}
+                  artist={song.artist}
+                  coverUrl={displayCoverUrl}
+                />
+              </div>
+            )}
 
             {song.description && (
               <div className="bg-muted rounded-lg p-4">

@@ -10,6 +10,7 @@ import {
   findSongByIdWithUrls,
   findSongsByUserIdWithUrls,
   deleteSong,
+  incrementPlayCount,
 } from "~/data-access/songs";
 import { z } from "zod";
 import { authenticatedMiddleware } from "./middleware";
@@ -135,4 +136,19 @@ export const deleteSongFn = createServerFn({
     }
     
     return { success: true };
+  });
+
+export const incrementPlayCountFn = createServerFn({
+  method: "POST",
+})
+  .validator(z.object({ songId: z.string() }))
+  .handler(async ({ data }) => {
+    const { songId } = data;
+    
+    const updatedSong = await incrementPlayCount(songId);
+    if (!updatedSong) {
+      throw new Error("Failed to increment play count");
+    }
+    
+    return { success: true, playCount: updatedSong.playCount };
   });

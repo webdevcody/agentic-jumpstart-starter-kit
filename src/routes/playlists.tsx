@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PlaylistCard } from "~/components/PlaylistCard";
 import { CreatePlaylistDialog } from "~/components/CreatePlaylistDialog";
 import { EditPlaylistDialog } from "~/components/EditPlaylistDialog";
-import { SongCard } from "~/components/SongCard";
 import { usePlaylist, toPlaylistSong } from "~/components/playlist-provider";
-import { usePlaylists, usePlaylistById, useDeletePlaylist } from "~/hooks/usePlaylists";
-import { useAudioUrl, useCoverImageUrl } from "~/hooks/useAudioStorage";
-// Temporary imports for complex loading logic - to be refactored later
-import { getPlaylistByIdFn } from "~/fn/playlists";
-import { getAudioUrlFn, getCoverImageUrlFn } from "~/fn/audio-storage";
+import {
+  usePlaylists,
+  usePlaylistById,
+  useDeletePlaylist,
+  useLoadPlaylistWithUrls,
+} from "~/hooks/usePlaylists";
 import { useMutation } from "@tanstack/react-query";
 import { Music, Plus, Play, Volume2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
@@ -42,61 +41,34 @@ function PlaylistsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Use playlist hooks
-  const {
-    data: playlists = [],
-    isLoading,
-    error,
-  } = usePlaylists();
+  const { data: playlists = [], isLoading, error } = usePlaylists();
 
   // Get selected playlist with songs
-  const { data: selectedPlaylist, isLoading: isLoadingPlaylist } = usePlaylistById(
-    selectedPlaylistId || "",
-    !!selectedPlaylistId
-  );
+  const { data: selectedPlaylist, isLoading: isLoadingPlaylist } =
+    usePlaylistById(selectedPlaylistId || "", !!selectedPlaylistId);
 
   // Use delete playlist hook
   const deletePlaylistMutation = useDeletePlaylist();
 
-  // Load playlist mutation for playing (temporary - complex logic to be refactored)
-  const loadPlaylistMutation = useMutation({
-    mutationFn: getPlaylistByIdFn,
-    onSuccess: async (playlistData) => {
-      if (playlistData.songs.length === 0) {
-        toast.info("This playlist is empty");
-        return;
-      }
-
-      // Convert songs to PlaylistSong format with URLs
-      const playlistSongs = await Promise.all(
-        playlistData.songs.map(async (song) => {
-          const [audioUrlResult, coverUrlResult] = await Promise.all([
-            song.audioKey
-              ? getAudioUrlFn({ data: { audioKey: song.audioKey } })
-              : Promise.resolve(null),
-            song.coverImageKey
-              ? getCoverImageUrlFn({ data: { coverKey: song.coverImageKey } })
-              : Promise.resolve(null),
-          ]);
-
-          return toPlaylistSong({
-            ...song,
-            audioUrl: audioUrlResult?.audioUrl || "",
-            coverImageUrl: coverUrlResult?.coverUrl || null,
-          });
-        })
-      );
-
-      loadSavedPlaylist(playlistData.id, playlistData.name, playlistSongs);
-      showPlayer(); // Show the music player
-      toast.success(`Now playing "${playlistData.name}"`);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to load playlist");
-    },
-  });
+  // Use load playlist hook
+  const loadPlaylistMutation = useLoadPlaylistWithUrls();
 
   const handlePlayClick = (playlistId: string) => {
-    loadPlaylistMutation.mutate({ data: { id: playlistId } });
+    loadPlaylistMutation.mutate({ data: { id: playlistId } }, {
+      onSuccess: ({ playlist, songsWithUrls }) => {
+        if (songsWithUrls.length === 0) {
+          toast.info("This playlist is empty");
+          return;
+        }
+
+        // Convert songs to PlaylistSong format
+        const playlistSongs = songsWithUrls.map(song => toPlaylistSong(song));
+
+        loadSavedPlaylist(playlist.id, playlist.name, playlistSongs);
+        showPlayer(); // Show the music player
+        toast.success(`Now playing "${playlist.name}"`);
+      }
+    });
   };
 
   const handleSelectPlaylist = (playlistId: string) => {
@@ -110,42 +82,34 @@ function PlaylistsPage() {
           // Clear selected playlist if it was the one deleted
           setSelectedPlaylistId(null);
           setDeleteDialogOpen(false);
-        }
+        },
       });
     }
   };
 
-  const handlePlaySong = async (songIndex: number) => {
+  const handlePlaySong = (songIndex: number) => {
     if (!selectedPlaylist || selectedPlaylist.songs.length === 0) return;
 
-    // Convert songs to PlaylistSong format with URLs
-    const playlistSongs = await Promise.all(
-      selectedPlaylist.songs.map(async (song) => {
-        const [audioUrlResult, coverUrlResult] = await Promise.all([
-          song.audioKey
-            ? getAudioUrlFn({ data: { audioKey: song.audioKey } })
-            : Promise.resolve(null),
-          song.coverImageKey
-            ? getCoverImageUrlFn({ data: { coverKey: song.coverImageKey } })
-            : Promise.resolve(null),
-        ]);
+    loadPlaylistMutation.mutate({ data: { id: selectedPlaylist.id } }, {
+      onSuccess: ({ playlist, songsWithUrls }) => {
+        if (songsWithUrls.length === 0) {
+          toast.info("This playlist is empty");
+          return;
+        }
 
-        return toPlaylistSong({
-          ...song,
-          audioUrl: audioUrlResult?.audioUrl || "",
-          coverImageUrl: coverUrlResult?.coverUrl || null,
-        });
-      })
-    );
+        // Convert songs to PlaylistSong format
+        const playlistSongs = songsWithUrls.map(song => toPlaylistSong(song));
 
-    loadSavedPlaylist(
-      selectedPlaylist.id,
-      selectedPlaylist.name,
-      playlistSongs,
-      songIndex
-    );
-    showPlayer();
-    toast.success(`Now playing "${selectedPlaylist.songs[songIndex].title}"`);
+        loadSavedPlaylist(
+          playlist.id,
+          playlist.name,
+          playlistSongs,
+          songIndex
+        );
+        showPlayer();
+        toast.success(`Now playing "${songsWithUrls[songIndex].title}"`);
+      }
+    });
   };
 
   return (
@@ -484,9 +448,9 @@ function PlaylistsPage() {
             <DialogHeader>
               <DialogTitle>Delete Playlist</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete "{selectedPlaylist?.name}"? This action
-                cannot be undone and will permanently remove the playlist and
-                all its songs.
+                Are you sure you want to delete "{selectedPlaylist?.name}"? This
+                action cannot be undone and will permanently remove the playlist
+                and all its songs.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

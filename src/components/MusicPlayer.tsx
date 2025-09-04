@@ -16,9 +16,10 @@ import { Tooltip } from "~/components/ui/tooltip";
 import { Slider } from "~/components/ui/slider";
 import { usePlaylist } from "~/components/playlist-provider";
 import { formatDuration } from "~/utils/song";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 // Temporary import for complex loading logic - to be refactored later
 import { getCoverImageUrlFn } from "~/fn/audio-storage";
+import { incrementPlayCountFn } from "~/fn/songs";
 
 interface MusicPlayerProps {
   onOpenPlaylist: () => void;
@@ -53,6 +54,21 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
+  const queryClient = useQueryClient();
+
+  const incrementPlayMutation = useMutation({
+    mutationFn: incrementPlayCountFn,
+    onSuccess: () => {
+      // Invalidate song-related queries to refetch updated play counts
+      queryClient.invalidateQueries({ queryKey: ['recent-songs'] });
+      queryClient.invalidateQueries({ queryKey: ['popular-songs'] });
+      queryClient.invalidateQueries({ queryKey: ['user-songs'] });
+      if (currentSong) {
+        queryClient.invalidateQueries({ queryKey: ['song', currentSong.id] });
+      }
+    },
+  });
 
   // Determine when buttons should be disabled
   const isAtFirstSong = currentIndex === 0;
@@ -65,6 +81,7 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
     if (audioRef.current && currentSong?.audioUrl) {
       audioRef.current.src = currentSong.audioUrl;
       audioRef.current.load();
+      setHasStartedPlaying(false); // Reset play tracking for new song
     }
   }, [currentSong]);
 
@@ -110,6 +127,14 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
     if (audioRef.current) {
       // Double-check playback rate when audio is ready to play
       audioRef.current.playbackRate = 1.0;
+    }
+  };
+
+  const handlePlay = () => {
+    // Only increment play count once per song when it actually starts playing
+    if (currentSong && !hasStartedPlaying) {
+      setHasStartedPlaying(true);
+      incrementPlayMutation.mutate({ data: { songId: currentSong.id } });
     }
   };
 
@@ -201,6 +226,7 @@ export function MusicPlayer({ onOpenPlaylist }: MusicPlayerProps) {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleCanPlay}
+        onPlay={handlePlay}
         onEnded={handleEnded}
         preload="metadata"
       />

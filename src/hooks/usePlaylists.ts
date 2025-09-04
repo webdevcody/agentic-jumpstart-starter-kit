@@ -1,20 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { 
+import {
   createPlaylistFn,
   updatePlaylistFn,
   deletePlaylistFn,
   addSongToPlaylistFn,
   removeSongFromPlaylistFn,
   addSongToSelectedPlaylistFn,
-  getOrCreateDefaultPlaylistFn
+  getOrCreateDefaultPlaylistFn,
+  loadPlaylistWithUrlsFn,
 } from "~/fn/playlists";
-import { 
+import {
   getPlaylistsQuery,
   getPublicPlaylistsQuery,
   getPlaylistByIdQuery,
   getOrCreateDefaultPlaylistQuery,
-  getLastPlaylistQuery
+  getLastPlaylistQuery,
 } from "~/queries/playlists";
 import { getErrorMessage } from "~/utils/error";
 import { authClient } from "~/lib/auth-client";
@@ -22,7 +23,7 @@ import { authClient } from "~/lib/auth-client";
 // Query hooks
 export function usePlaylists(enabled = true) {
   const { data: session } = authClient.useSession();
-  
+
   return useQuery({
     ...getPlaylistsQuery(),
     enabled: enabled && !!session?.user, // Only run if authenticated
@@ -38,7 +39,7 @@ export function usePublicPlaylists(enabled = true) {
 
 export function usePlaylistById(id: string, enabled = true) {
   const { data: session } = authClient.useSession();
-  
+
   return useQuery({
     ...getPlaylistByIdQuery(id),
     enabled: enabled && !!id && !!session?.user, // Only run if authenticated
@@ -47,7 +48,7 @@ export function usePlaylistById(id: string, enabled = true) {
 
 export function useDefaultPlaylist(enabled = true) {
   const { data: session } = authClient.useSession();
-  
+
   return useQuery({
     ...getOrCreateDefaultPlaylistQuery(),
     enabled: enabled && !!session?.user, // Only run if authenticated
@@ -56,7 +57,7 @@ export function useDefaultPlaylist(enabled = true) {
 
 export function useLastPlaylist(enabled = true) {
   const { data: session } = authClient.useSession();
-  
+
   return useQuery({
     ...getLastPlaylistQuery(),
     enabled: enabled && !!session?.user, // Only run if authenticated
@@ -66,25 +67,27 @@ export function useLastPlaylist(enabled = true) {
 // Mutation hooks
 export function useCreatePlaylist() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (data: Parameters<typeof createPlaylistFn>[0]['data']) =>
+    mutationFn: (data: Parameters<typeof createPlaylistFn>[0]["data"]) =>
       createPlaylistFn({ data }),
     onSuccess: (newPlaylist) => {
       toast.success("Playlist created successfully!", {
         description: `"${newPlaylist.name}" is ready for your music.`,
       });
-      
+
       // Invalidate playlists queries
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
       queryClient.invalidateQueries({ queryKey: ["public-playlists"] });
     },
     onError: (error) => {
       const errorMessage = getErrorMessage(error);
-      
-      if (errorMessage === "PLAYLIST_LIMIT_FREE" || 
-          errorMessage === "PLAYLIST_LIMIT_BASIC" || 
-          errorMessage === "SUBSCRIPTION_EXPIRED") {
+
+      if (
+        errorMessage === "PLAYLIST_LIMIT_FREE" ||
+        errorMessage === "PLAYLIST_LIMIT_BASIC" ||
+        errorMessage === "SUBSCRIPTION_EXPIRED"
+      ) {
         toast.error("Playlist limit reached", {
           description: "Please upgrade your plan to create more playlists.",
         });
@@ -99,15 +102,15 @@ export function useCreatePlaylist() {
 
 export function useUpdatePlaylist() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (data: Parameters<typeof updatePlaylistFn>[0]['data']) =>
+    mutationFn: (data: Parameters<typeof updatePlaylistFn>[0]["data"]) =>
       updatePlaylistFn({ data }),
     onSuccess: (updatedPlaylist, variables) => {
       toast.success("Playlist updated successfully!", {
         description: `Changes to "${updatedPlaylist.name}" have been saved.`,
       });
-      
+
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
       queryClient.invalidateQueries({ queryKey: ["playlist", variables.id] });
@@ -123,18 +126,18 @@ export function useUpdatePlaylist() {
 
 export function useDeletePlaylist() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => deletePlaylistFn({ data: { id } }),
     onSuccess: (_, playlistId) => {
       toast.success("Playlist deleted successfully", {
         description: "Your playlist has been permanently removed.",
       });
-      
+
       // Invalidate playlists queries
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
       queryClient.invalidateQueries({ queryKey: ["public-playlists"] });
-      
+
       // Remove the specific playlist from cache
       queryClient.removeQueries({ queryKey: ["playlist", playlistId] });
     },
@@ -148,13 +151,13 @@ export function useDeletePlaylist() {
 
 export function useAddSongToPlaylist() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: { playlistId: string; songId: string }) =>
       addSongToPlaylistFn({ data }),
     onSuccess: (_, { playlistId, songId }) => {
       toast.success("Song added to playlist!");
-      
+
       // Invalidate playlist data
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
@@ -169,13 +172,13 @@ export function useAddSongToPlaylist() {
 
 export function useRemoveSongFromPlaylist() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: { playlistId: string; songId: string }) =>
       removeSongFromPlaylistFn({ data }),
     onSuccess: (_, { playlistId, songId }) => {
       toast.success("Song removed from playlist");
-      
+
       // Invalidate playlist data
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
@@ -190,13 +193,13 @@ export function useRemoveSongFromPlaylist() {
 
 export function useAddSongToSelectedPlaylist() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: { playlistId: string; songId: string }) =>
       addSongToSelectedPlaylistFn({ data }),
     onSuccess: (_, { playlistId, songId }) => {
       toast.success("Song added to selected playlist!");
-      
+
       // Invalidate playlist data
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
@@ -211,23 +214,25 @@ export function useAddSongToSelectedPlaylist() {
 
 export function useGetOrCreateDefaultPlaylist() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: getOrCreateDefaultPlaylistFn,
     onSuccess: (defaultPlaylist) => {
       // Update queries
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
       queryClient.invalidateQueries({ queryKey: ["default-playlist"] });
-      
+
       // Set the data immediately
       queryClient.setQueryData(["default-playlist"], defaultPlaylist);
     },
     onError: (error) => {
       const errorMessage = getErrorMessage(error);
-      
-      if (errorMessage === "PLAYLIST_LIMIT_FREE" || 
-          errorMessage === "PLAYLIST_LIMIT_BASIC" || 
-          errorMessage === "SUBSCRIPTION_EXPIRED") {
+
+      if (
+        errorMessage === "PLAYLIST_LIMIT_FREE" ||
+        errorMessage === "PLAYLIST_LIMIT_BASIC" ||
+        errorMessage === "SUBSCRIPTION_EXPIRED"
+      ) {
         toast.error("Unable to create playlist", {
           description: "Please check your subscription plan.",
         });
@@ -240,34 +245,11 @@ export function useGetOrCreateDefaultPlaylist() {
   });
 }
 
-// Combined hook for playlist management
-export function usePlaylistManagement() {
-  const queryClient = useQueryClient();
-  
-  const invalidatePlaylistData = (playlistId?: string) => {
-    queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
-    queryClient.invalidateQueries({ queryKey: ["public-playlists"] });
-    
-    if (playlistId) {
-      queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
-    }
-  };
-  
-  return {
-    // Queries
-    playlists: usePlaylists(),
-    publicPlaylists: usePublicPlaylists(),
-    
-    // Mutations
-    createPlaylist: useCreatePlaylist(),
-    updatePlaylist: useUpdatePlaylist(),
-    deletePlaylist: useDeletePlaylist(),
-    addSongToPlaylist: useAddSongToPlaylist(),
-    removeSongFromPlaylist: useRemoveSongFromPlaylist(),
-    addSongToSelectedPlaylist: useAddSongToSelectedPlaylist(),
-    getOrCreateDefaultPlaylist: useGetOrCreateDefaultPlaylist(),
-    
-    // Utilities
-    invalidatePlaylistData,
-  };
+export function useLoadPlaylistWithUrls() {
+  return useMutation({
+    mutationFn: loadPlaylistWithUrlsFn,
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to load playlist");
+    },
+  });
 }
