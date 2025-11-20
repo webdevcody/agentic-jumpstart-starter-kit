@@ -11,7 +11,7 @@ import {
 export const toggleHeartFn = createServerFn({
   method: "POST",
 })
-  .validator(z.object({ songId: z.string() }))
+  .inputValidator(z.object({ songId: z.string() }))
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { songId } = data;
@@ -40,7 +40,7 @@ export const toggleHeartFn = createServerFn({
 export const getHeartStatusFn = createServerFn({
   method: "GET",
 })
-  .validator(z.object({ songId: z.string() }))
+  .inputValidator(z.object({ songId: z.string() }))
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { songId } = data;
@@ -58,7 +58,7 @@ export const getHeartStatusFn = createServerFn({
 export const getHeartCountFn = createServerFn({
   method: "GET",
 })
-  .validator(z.object({ songId: z.string() }))
+  .inputValidator(z.object({ songId: z.string() }))
   .handler(async ({ data }) => {
     const { songId } = data;
     const heartCount = await getHeartCountForSong(songId);

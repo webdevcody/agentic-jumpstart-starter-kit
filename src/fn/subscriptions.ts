@@ -47,7 +47,7 @@ const createCheckoutSessionSchema = z.object({
 
 export const createCheckoutSessionFn = createServerFn({ method: "POST" })
   .middleware([authenticatedMiddleware])
-  .validator(createCheckoutSessionSchema)
+  .inputValidator(createCheckoutSessionSchema)
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { priceId } = data;

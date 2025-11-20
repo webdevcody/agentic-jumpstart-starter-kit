@@ -41,7 +41,7 @@ export const getPublicPlaylistsFn = createServerFn().handler(async () => {
 export const getPlaylistByIdFn = createServerFn({
   method: "GET",
 })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const playlist = await findPlaylistByIdWithSongs(data.id);
     if (!playlist) {
@@ -53,7 +53,7 @@ export const getPlaylistByIdFn = createServerFn({
 export const createPlaylistFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       name: z.string().min(1).max(100),
       description: z.string().max(500).optional(),
@@ -88,7 +88,7 @@ export const createPlaylistFn = createServerFn({
 export const updatePlaylistFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       id: z.string(),
       name: z.string().min(1).max(100).optional(),
@@ -116,7 +116,7 @@ export const updatePlaylistFn = createServerFn({
 export const deletePlaylistFn = createServerFn({
   method: "POST",
 })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { id } = data;
@@ -145,7 +145,7 @@ export const deletePlaylistFn = createServerFn({
 export const addSongToPlaylistFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       playlistId: z.string(),
       songId: z.string(),
@@ -167,7 +167,7 @@ export const addSongToPlaylistFn = createServerFn({
 export const removeSongFromPlaylistFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       playlistId: z.string(),
       songId: z.string(),
@@ -193,7 +193,7 @@ export const removeSongFromPlaylistFn = createServerFn({
 export const addSongToSelectedPlaylistFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       playlistId: z.string(),
       songId: z.string(),
@@ -254,7 +254,7 @@ export const getLastPlaylistFn = createServerFn()
 export const loadPlaylistWithUrlsFn = createServerFn({
   method: "GET",
 })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const playlist = await findPlaylistByIdWithSongs(data.id);
     if (!playlist) {
@@ -297,7 +297,7 @@ export const loadPlaylistWithUrlsFn = createServerFn({
 export const reorderPlaylistSongsFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       playlistId: z.string(),
       songOrders: z.array(

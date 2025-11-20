@@ -1,10 +1,16 @@
 import { redirect } from "@tanstack/react-router";
 import { auth } from "~/utils/auth";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 
-export const assertAuthenticatedFn =
-  (path: string) => async (headers: Headers) => {
-    const session = await auth.api.getSession({ headers });
+export const assertAuthenticatedFn = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const headers = getRequest().headers;
+    const session = await auth.api.getSession({
+      headers: headers as unknown as Headers,
+    });
     if (!session) {
-      throw redirect({ to: path });
+      throw redirect({ to: "/unauthenticated" });
     }
-  };
+  }
+);

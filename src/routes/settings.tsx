@@ -11,7 +11,7 @@ import {
   useCreatePortalSession,
   useCancelSubscription,
 } from "~/hooks/useSubscription";
-import { useUpdateUserProfile } from "~/hooks/useProfile";
+import { useUpdateUserProfile, useDeleteUserAccount } from "~/hooks/useProfile";
 import { uploadImageWithPresignedUrl } from "~/utils/storage/helpers";
 import { toast } from "sonner";
 import { useState, useCallback } from "react";
@@ -23,11 +23,163 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import { Upload, User, Home } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { Upload, User, Home, Trash2, AlertTriangle } from "lucide-react";
+import { assertAuthenticatedFn } from "~/fn/guards";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
+  beforeLoad: async () => {
+    await assertAuthenticatedFn();
+  },
 });
+
+function AccountDeletionSettings() {
+  const { data: session } = authClient.useSession();
+  const [emailInput, setEmailInput] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const deleteAccountMutation = useDeleteUserAccount();
+
+  const handleDeleteRequest = () => {
+    setIsDialogOpen(true);
+  };
+
+  const handleConfirmDelete = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (emailInput === session?.user?.email) {
+      deleteAccountMutation.mutate({
+        data: { email: emailInput },
+      });
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDialogOpen(false);
+    setEmailInput("");
+  };
+
+  return (
+    <>
+      <Card className="border-red-200 dark:border-red-800 bg-white dark:bg-gray-900">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <AlertTriangle className="h-5 w-5" />
+            Danger Zone
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-red-600 dark:text-red-400 mb-2">
+              Delete Account
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Permanently delete your account and all associated data. This
+              action cannot be undone. All your songs, playlists, and
+              subscription data will be permanently removed.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteRequest}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Account Deletion
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              This will permanently delete your account and all data associated
+              with it.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 my-4">
+            <div className="space-y-3">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                The following data will be permanently deleted:
+              </p>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 list-disc list-inside space-y-1">
+                <li>All uploaded songs and audio files</li>
+                <li>All created playlists</li>
+                <li>All liked songs and hearts</li>
+                <li>Your subscription and billing information</li>
+                <li>Your profile and account settings</li>
+              </ul>
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleConfirmDelete} className="space-y-4">
+            <div>
+              <Label
+                htmlFor="confirmEmail"
+                className="text-gray-700 dark:text-gray-300"
+              >
+                To confirm, type your email address:
+              </Label>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-mono mb-2">
+                {session?.user?.email}
+              </p>
+              <Input
+                id="confirmEmail"
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="Enter your email to confirm"
+                className="border-red-300 dark:border-red-700 focus:border-red-500 dark:focus:border-red-400"
+                disabled={deleteAccountMutation.isPending}
+              />
+            </div>
+
+            <DialogFooter className="flex gap-3 sm:justify-start">
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={
+                  deleteAccountMutation.isPending ||
+                  emailInput !== session?.user?.email
+                }
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deleteAccountMutation.isPending
+                  ? "Deleting..."
+                  : "Delete My Account"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancelDelete}
+                disabled={deleteAccountMutation.isPending}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 function ProfileSettings() {
   const { data: session } = authClient.useSession();
@@ -354,21 +506,9 @@ function SettingsPage() {
           </section>
         )}
 
-        {/* Additional Settings Section for Future */}
+        {/* Account Deletion */}
         <section>
-          <div className="bg-muted/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Need Help?
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Have questions about your subscription or need to make changes?
-              We're here to help.
-            </p>
-            <div className="text-sm text-muted-foreground">
-              <p>Email: support@techtube.com</p>
-              <p>Response time: Within 24 hours</p>
-            </div>
-          </div>
+          <AccountDeletionSettings />
         </section>
       </div>
     </Page>

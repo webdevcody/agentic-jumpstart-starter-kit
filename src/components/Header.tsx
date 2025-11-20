@@ -44,15 +44,8 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenPlaylist }: HeaderProps = {}) {
-  const { data: session, isPending, error } = authClient.useSession();
-  
-  // Debug logging for session state
-  React.useEffect(() => {
-    console.log('Header useSession state:', { session, isPending, error });
-    if (error) {
-      console.error('useSession error:', error);
-    }
-  }, [session, isPending, error]);
+  const { data: session, isPending } = authClient.useSession();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { avatarUrl } = useUserAvatar();
   const { playlist, showPlayer } = usePlaylist();

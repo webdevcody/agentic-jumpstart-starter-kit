@@ -8,10 +8,9 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createServerRootRoute } from '@tanstack/react-start/server'
-
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as UnauthenticatedRouteImport } from './routes/unauthenticated'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -21,14 +20,17 @@ import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SongIdIndexRouteImport } from './routes/song/$id/index'
 import { Route as SongIdEditRouteImport } from './routes/song/$id/edit'
-import { ServerRoute as ApiStripeWebhookServerRouteImport } from './routes/api/stripe/webhook'
-import { ServerRoute as ApiAuthSplatServerRouteImport } from './routes/api/auth/$'
-
-const rootServerRouteImport = createServerRootRoute()
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnauthenticatedRoute = UnauthenticatedRouteImport.update({
+  id: '/unauthenticated',
+  path: '/unauthenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignUpRoute = SignUpRouteImport.update({
@@ -76,15 +78,15 @@ const SongIdEditRoute = SongIdEditRouteImport.update({
   path: '/song/$id/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiStripeWebhookServerRoute = ApiStripeWebhookServerRouteImport.update({
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
-  getParentRoute: () => rootServerRouteImport,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatServerRoute = ApiAuthSplatServerRouteImport.update({
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
-  getParentRoute: () => rootServerRouteImport,
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -95,7 +97,10 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/unauthenticated': typeof UnauthenticatedRoute
   '/upload': typeof UploadRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/song/$id/edit': typeof SongIdEditRoute
   '/song/$id': typeof SongIdIndexRoute
 }
@@ -107,7 +112,10 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/unauthenticated': typeof UnauthenticatedRoute
   '/upload': typeof UploadRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/song/$id/edit': typeof SongIdEditRoute
   '/song/$id': typeof SongIdIndexRoute
 }
@@ -120,7 +128,10 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/unauthenticated': typeof UnauthenticatedRoute
   '/upload': typeof UploadRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/song/$id/edit': typeof SongIdEditRoute
   '/song/$id/': typeof SongIdIndexRoute
 }
@@ -134,7 +145,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sign-in'
     | '/sign-up'
+    | '/unauthenticated'
     | '/upload'
+    | '/api/auth/$'
+    | '/api/stripe/webhook'
     | '/song/$id/edit'
     | '/song/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -146,7 +160,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sign-in'
     | '/sign-up'
+    | '/unauthenticated'
     | '/upload'
+    | '/api/auth/$'
+    | '/api/stripe/webhook'
     | '/song/$id/edit'
     | '/song/$id'
   id:
@@ -158,7 +175,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sign-in'
     | '/sign-up'
+    | '/unauthenticated'
     | '/upload'
+    | '/api/auth/$'
+    | '/api/stripe/webhook'
     | '/song/$id/edit'
     | '/song/$id/'
   fileRoutesById: FileRoutesById
@@ -171,34 +191,12 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  UnauthenticatedRoute: typeof UnauthenticatedRoute
   UploadRoute: typeof UploadRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   SongIdEditRoute: typeof SongIdEditRoute
   SongIdIndexRoute: typeof SongIdIndexRoute
-}
-export interface FileServerRoutesByFullPath {
-  '/api/auth/$': typeof ApiAuthSplatServerRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookServerRoute
-}
-export interface FileServerRoutesByTo {
-  '/api/auth/$': typeof ApiAuthSplatServerRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookServerRoute
-}
-export interface FileServerRoutesById {
-  __root__: typeof rootServerRouteImport
-  '/api/auth/$': typeof ApiAuthSplatServerRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookServerRoute
-}
-export interface FileServerRouteTypes {
-  fileServerRoutesByFullPath: FileServerRoutesByFullPath
-  fullPaths: '/api/auth/$' | '/api/stripe/webhook'
-  fileServerRoutesByTo: FileServerRoutesByTo
-  to: '/api/auth/$' | '/api/stripe/webhook'
-  id: '__root__' | '/api/auth/$' | '/api/stripe/webhook'
-  fileServerRoutesById: FileServerRoutesById
-}
-export interface RootServerRouteChildren {
-  ApiAuthSplatServerRoute: typeof ApiAuthSplatServerRoute
-  ApiStripeWebhookServerRoute: typeof ApiStripeWebhookServerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -208,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unauthenticated': {
+      id: '/unauthenticated'
+      path: '/unauthenticated'
+      fullPath: '/unauthenticated'
+      preLoaderRoute: typeof UnauthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-up': {
@@ -273,23 +278,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SongIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
-  }
-}
-declare module '@tanstack/react-start/server' {
-  interface ServerFileRoutesByPath {
     '/api/stripe/webhook': {
       id: '/api/stripe/webhook'
       path: '/api/stripe/webhook'
       fullPath: '/api/stripe/webhook'
-      preLoaderRoute: typeof ApiStripeWebhookServerRouteImport
-      parentRoute: typeof rootServerRouteImport
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatServerRouteImport
-      parentRoute: typeof rootServerRouteImport
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -302,17 +303,22 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  UnauthenticatedRoute: UnauthenticatedRoute,
   UploadRoute: UploadRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   SongIdEditRoute: SongIdEditRoute,
   SongIdIndexRoute: SongIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-const rootServerRouteChildren: RootServerRouteChildren = {
-  ApiAuthSplatServerRoute: ApiAuthSplatServerRoute,
-  ApiStripeWebhookServerRoute: ApiStripeWebhookServerRoute,
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
 }
-export const serverRouteTree = rootServerRouteImport
-  ._addFileChildren(rootServerRouteChildren)
-  ._addFileTypes<FileServerRouteTypes>()

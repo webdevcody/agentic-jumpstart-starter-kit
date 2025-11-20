@@ -5,10 +5,12 @@ This document explains how the application handles file uploads using Cloudflare
 ## Architecture Overview
 
 The file upload system uses a two-phase approach:
+
 1. **Upload Phase**: Client requests presigned upload URL from server, then uploads directly to R2
 2. **Access Phase**: Client requests presigned download URL from server to access stored files
 
 This approach provides several benefits:
+
 - Files are uploaded directly to R2, reducing server bandwidth
 - Upload progress can be tracked on the client
 - Server maintains control over access permissions
@@ -28,10 +30,13 @@ The `R2Storage` class implements the `IStorage` interface and provides:
 ```typescript
 class R2Storage implements IStorage {
   // Generates presigned URL for direct uploads (1 hour expiry)
-  async getPresignedUploadUrl(key: string, contentType: string): Promise<string>
-  
-  // Generates presigned URL for downloads (1 hour expiry)  
-  async getPresignedUrl(key: string): Promise<string>
+  async getPresignedUploadUrl(
+    key: string,
+    contentType: string
+  ): Promise<string>;
+
+  // Generates presigned URL for downloads (1 hour expiry)
+  async getPresignedUrl(key: string): Promise<string>;
 }
 ```
 
@@ -42,7 +47,6 @@ class R2Storage implements IStorage {
 - `getPresignedAudioUploadUrlFn`: Creates presigned upload URL for audio files
   - Generates unique song ID and structured storage path: `music/{userId}/{songId}/audio.{ext}`
   - Requires authentication
-  
 - `getPresignedCoverImageUploadUrlFn`: Creates presigned upload URL for cover images
   - Uses path: `music/{userId}/{songId}/cover.{ext}`
   - Requires authentication
@@ -66,10 +70,11 @@ The client handles the actual upload process:
 export async function uploadAudioWithPresignedUrl(
   file: File,
   onProgress?: (progress: UploadProgress) => void
-): Promise<AudioUploadResult>
+): Promise<AudioUploadResult>;
 ```
 
 **Upload Process:**
+
 1. Calculate audio duration from file
 2. Request presigned upload URL from server
 3. Upload file directly to R2 using XMLHttpRequest (for progress tracking)
@@ -78,6 +83,7 @@ export async function uploadAudioWithPresignedUrl(
 ### 4. File Upload UI (`src/components/ui/file-upload.tsx`)
 
 Provides drag-and-drop interface with:
+
 - File type validation
 - Size limits (configurable)
 - Progress indication
@@ -104,6 +110,7 @@ bucket/
 ## Current Access Control
 
 **Public Access**: All uploaded files are currently publicly accessible through presigned URLs. The security is:
+
 - **Upload**: Requires user authentication to get presigned upload URLs
 - **Download**: No authentication required once you have the storage key
 - **URL Expiry**: Presigned URLs expire after 1 hour
@@ -130,35 +137,38 @@ To implement secure, private file access, you would modify the download server f
 ```typescript
 export const getAudioUrlFn = createServerFn({ method: "POST" })
   .middleware([authenticatedMiddleware]) // Add authentication
-  .validator(z.object({
-    audioKey: z.string(),
-    songId: z.string().optional(), // Add song context
-  }))
+  .inputValidator(
+    z.object({
+      audioKey: z.string(),
+      songId: z.string().optional(), // Add song context
+    })
+  )
   .handler(async ({ data, context }) => {
     const userId = context.userId;
-    
+
     // Check if user has access to this file
     const song = await database.query.song.findFirst({
-      where: eq(song.audioKey, data.audioKey)
+      where: eq(song.audioKey, data.audioKey),
     });
-    
+
     if (!song) {
       throw new Error("Song not found");
     }
-    
+
     // Implement access control logic
-    if (song.status === 'private' && song.userId !== userId) {
+    if (song.status === "private" && song.userId !== userId) {
       throw new Error("Access denied");
     }
-    
+
     const { storage } = getStorage();
     const audioUrl = await storage.getPresignedUrl(data.audioKey);
-    
+
     return { audioUrl };
   });
 ```
 
 This would enable:
+
 - **Private files**: Only accessible to authorized users
 - **Subscription-gated content**: Check user subscription level
 - **Time-limited access**: Generate URLs with custom expiry times

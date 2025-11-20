@@ -178,7 +178,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             />
             <TanStackRouterDevtools position="bottom-right" />
             <ReactQueryDevtools buttonPosition="bottom-left" />
-            <Toaster position="top-left" />
+            <Toaster />
             <Scripts />
           </PlaylistProvider>
         </ThemeProvider>

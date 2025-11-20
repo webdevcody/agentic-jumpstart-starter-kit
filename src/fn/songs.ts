@@ -26,7 +26,7 @@ export const getPopularSongsFn = createServerFn().handler(async () => {
 export const createSongFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       title: z.string().min(2).max(100),
       artist: z.string().min(1).max(50),
@@ -56,7 +56,7 @@ export const createSongFn = createServerFn({
 export const getSongByIdFn = createServerFn({
   method: "GET",
 })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const song = await findSongByIdWithUrls(data.id);
     if (!song) {
@@ -68,7 +68,7 @@ export const getSongByIdFn = createServerFn({
 export const updateSongFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       id: z.string(),
       title: z.string().min(2).max(100).optional(),
@@ -87,13 +87,13 @@ export const updateSongFn = createServerFn({
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { id, ...updateData } = data;
-    
+
     // First check if the song exists and belongs to the user
     const existingSong = await findSongById(id);
     if (!existingSong) {
       throw new Error("Song not found");
     }
-    
+
     if (existingSong.userId !== context.userId) {
       throw new Error("Unauthorized: You can only edit your own songs");
     }
@@ -102,7 +102,7 @@ export const updateSongFn = createServerFn({
     if (!updatedSong) {
       throw new Error("Failed to update song");
     }
-    
+
     return updatedSong;
   });
 
@@ -115,17 +115,17 @@ export const getUserSongsFn = createServerFn()
 export const deleteSongFn = createServerFn({
   method: "POST",
 })
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { id } = data;
-    
+
     // First check if the song exists and belongs to the user
     const existingSong = await findSongById(id);
     if (!existingSong) {
       throw new Error("Song not found");
     }
-    
+
     if (existingSong.userId !== context.userId) {
       throw new Error("Unauthorized: You can only delete your own songs");
     }
@@ -134,21 +134,21 @@ export const deleteSongFn = createServerFn({
     if (!deleted) {
       throw new Error("Failed to delete song");
     }
-    
+
     return { success: true };
   });
 
 export const incrementPlayCountFn = createServerFn({
   method: "POST",
 })
-  .validator(z.object({ songId: z.string() }))
+  .inputValidator(z.object({ songId: z.string() }))
   .handler(async ({ data }) => {
     const { songId } = data;
-    
+
     const updatedSong = await incrementPlayCount(songId);
     if (!updatedSong) {
       throw new Error("Failed to increment play count");
     }
-    
+
     return { success: true, playCount: updatedSong.playCount };
   });

@@ -1,6 +1,6 @@
 # UX Patterns & Guidelines
 
-This document outlines the consistent UX patterns used throughout the TechTube application. Follow these guidelines when adding new features or pages.
+This document outlines the consistent UX patterns used throughout the SoundStation application. Follow these guidelines when adding new features or pages.
 
 ## Table of Contents
 
@@ -17,6 +17,7 @@ This document outlines the consistent UX patterns used throughout the TechTube a
 ### Pattern: Client-Side Validation with Real-Time Feedback
 
 **Key Principles:**
+
 - **Never disable buttons** - Always allow form submission attempts
 - Use `react-hook-form` with `zod` schema validation
 - Show field-specific error messages below inputs
@@ -28,7 +29,9 @@ This document outlines the consistent UX patterns used throughout the TechTube a
 ```tsx
 const form = useForm<FormData>({
   resolver: zodResolver(validationSchema),
-  defaultValues: { /* defaults */ }
+  defaultValues: {
+    /* defaults */
+  },
 });
 
 const onSubmit = async (data: FormData) => {
@@ -40,17 +43,14 @@ const onSubmit = async (data: FormData) => {
     onError: (error) => {
       // Let the hook handle error toasts
       // Or handle specific errors here
-    }
+    },
   });
 };
 
 // Button remains enabled but shows loading state
-<Button 
-  type="submit"
-  disabled={mutation.isPending}
->
+<Button type="submit" disabled={mutation.isPending}>
   {mutation.isPending ? "Saving..." : "Save"}
-</Button>
+</Button>;
 ```
 
 ### Form Field Pattern:
@@ -76,6 +76,7 @@ const onSubmit = async (data: FormData) => {
 ```
 
 ### Form Validation Examples:
+
 - **Upload Form** (`src/routes/upload.tsx:36-61`): Comprehensive validation with file upload
 - **Sign-in Form** (`src/routes/sign-in.tsx:27-30`): Basic email/password validation
 - **Playlist Creation** (`src/components/CreatePlaylistDialog.tsx:123-133`): Inline validation with character limits
@@ -85,6 +86,7 @@ const onSubmit = async (data: FormData) => {
 ### Pattern: Never Disable Buttons, Show Loading States
 
 **Key Principles:**
+
 - Buttons show loading state but remain clickable
 - Use `isPending` or `isLoading` to show loading text/spinner
 - Toast notifications provide user feedback
@@ -93,13 +95,11 @@ const onSubmit = async (data: FormData) => {
 ### Button State Implementation:
 
 ```tsx
-const mutation = useMutation({ /* ... */ });
+const mutation = useMutation({
+  /* ... */
+});
 
-<Button
-  type="submit"
-  disabled={mutation.isPending}
-  className="w-full"
->
+<Button type="submit" disabled={mutation.isPending} className="w-full">
   {mutation.isPending ? (
     <>
       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -111,7 +111,7 @@ const mutation = useMutation({ /* ... */ });
       Submit
     </>
   )}
-</Button>
+</Button>;
 ```
 
 ### Toast Notification Patterns:
@@ -122,7 +122,7 @@ import { toast } from "sonner";
 // Success notifications
 toast.success("Song uploaded successfully");
 
-// Error notifications  
+// Error notifications
 toast.error("Failed to upload file");
 
 // Info notifications
@@ -130,6 +130,7 @@ toast.info("This playlist is empty");
 ```
 
 ### Examples:
+
 - **File Upload** (`src/routes/upload.tsx:525-542`): Loading states with progress
 - **Form Submissions** (`src/components/CreatePlaylistDialog.tsx:182-190`): Disabled state with loading text
 - **Authentication** (`src/routes/sign-in.tsx:308-317`): Loading spinner with text change
@@ -139,6 +140,7 @@ toast.info("This playlist is empty");
 ### Pattern: Confirmation Dialog with Descriptive Warning
 
 **Key Principles:**
+
 - Always use `Dialog` component for delete confirmations
 - Include item name in confirmation message
 - Warn about irreversible nature of action
@@ -159,7 +161,7 @@ const handleDelete = () => {
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setSelectedItem(null);
-      }
+      },
     });
   }
 };
@@ -169,9 +171,9 @@ const handleDelete = () => {
     <DialogHeader>
       <DialogTitle>Delete {itemType}</DialogTitle>
       <DialogDescription>
-        Are you sure you want to delete "{selectedItem?.name}"? 
-        This action cannot be undone and will permanently remove 
-        the {itemType} and all its data.
+        Are you sure you want to delete "{selectedItem?.name}"? This action
+        cannot be undone and will permanently remove the {itemType} and all its
+        data.
       </DialogDescription>
     </DialogHeader>
     <DialogFooter>
@@ -191,10 +193,11 @@ const handleDelete = () => {
       </Button>
     </DialogFooter>
   </DialogContent>
-</Dialog>
+</Dialog>;
 ```
 
 ### Examples:
+
 - **Playlist Deletion** (`src/routes/playlists.tsx:445-473`): Full dialog implementation
 - **Song Deletion** (`src/routes/my-songs.tsx:40-51`): Simple confirm() for basic cases
 - **Inline Confirmations**: Use `window.confirm()` only for simple single-item deletions
@@ -204,6 +207,7 @@ const handleDelete = () => {
 ### Pattern: Right-Aligned Actions in Headers
 
 **Key Principles:**
+
 - Primary actions (Create/Add) go in the top-right of page headers
 - Secondary actions (Edit/Delete) appear on hover in item cards
 - Action buttons use consistent icons from `lucide-react`
@@ -230,7 +234,7 @@ const handleDelete = () => {
 ```tsx
 <div className="group relative">
   {/* Card content */}
-  
+
   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
     <div className="flex items-center gap-1">
       <Button size="sm" variant="ghost">
@@ -245,8 +249,9 @@ const handleDelete = () => {
 ```
 
 ### Examples:
+
 - **My Songs Page** (`src/routes/my-songs.tsx:100-111`): Create button in header
-- **Playlists Page** (`src/routes/playlists.tsx:148-155`): Add button in sidebar header  
+- **Playlists Page** (`src/routes/playlists.tsx:148-155`): Add button in sidebar header
 - **Song Cards**: Hover actions with edit/delete options
 - **Settings Page** (`src/routes/settings.tsx:168-178`): Action buttons next to form fields
 
@@ -255,6 +260,7 @@ const handleDelete = () => {
 ### Pattern: Contextual Tooltips for Disabled or Complex Actions
 
 **Key Principles:**
+
 - Use tooltips to explain why buttons are disabled
 - Provide helpful context for icon-only buttons
 - Use `title` attribute for simple tooltips
@@ -299,6 +305,7 @@ import { Tooltip } from "~/components/ui/tooltip";
 ```
 
 ### Examples:
+
 - **Music Player** (`src/components/MusicPlayer.tsx:291-303`): Tooltips explaining disabled states
 - **Playlist Sheet** (`src/components/PlaylistSheet.tsx:370-380`): Hover-revealed actions
 - **Close Buttons**: Simple title attributes for accessibility
@@ -308,6 +315,7 @@ import { Tooltip } from "~/components/ui/tooltip";
 ### Pattern: Contextual Navigation with Icons
 
 **Key Principles:**
+
 - All pages should include breadcrumbs (except root pages)
 - Use `AppBreadcrumb` component for consistency
 - Include relevant icons from `lucide-react`
@@ -324,9 +332,9 @@ import { Home, Music } from "lucide-react";
   items={[
     { label: "Home", href: "/", icon: Home },
     { label: "Browse", href: "/browse", icon: Music },
-    { label: "Current Page" } // No href = current page
+    { label: "Current Page" }, // No href = current page
   ]}
-/>
+/>;
 ```
 
 ### Smart Breadcrumbs:
@@ -334,12 +342,13 @@ import { Home, Music } from "lucide-react";
 Use `useSongBreadcrumbs` hook for dynamic navigation:
 
 ```tsx
-const breadcrumbItems = useSongBreadcrumbs(songTitle, 'edit');
+const breadcrumbItems = useSongBreadcrumbs(songTitle, "edit");
 
-<AppBreadcrumb items={breadcrumbItems} />
+<AppBreadcrumb items={breadcrumbItems} />;
 ```
 
 ### Examples:
+
 - **Upload Page** (`src/routes/upload.tsx:225-230`): Simple parent-child navigation
 - **Settings Page** (`src/routes/settings.tsx:292-297`): Home → Settings
 - **Song Pages** (`src/hooks/useSongBreadcrumbs.ts`): Dynamic breadcrumbs based on entry point
@@ -348,29 +357,34 @@ const breadcrumbItems = useSongBreadcrumbs(songTitle, 'edit');
 ## General Principles
 
 ### 1. Consistency
+
 - Use the same patterns across similar functionality
 - Maintain consistent spacing, colors, and typography
 - Reuse existing components before creating new ones
 
 ### 2. Accessibility
+
 - Always provide meaningful button labels and tooltips
 - Use proper ARIA labels where needed
 - Ensure keyboard navigation works properly
 - Maintain sufficient color contrast
 
 ### 3. Feedback
+
 - Provide immediate feedback for user actions
 - Show loading states for async operations
 - Use appropriate toast notifications
 - Display helpful error messages
 
 ### 4. Progressive Enhancement
+
 - Start with basic functionality
 - Add advanced features that enhance the experience
 - Gracefully handle loading and error states
 - Provide fallbacks for failed operations
 
 ### 5. Mobile Responsiveness
+
 - Test all patterns on mobile devices
 - Use appropriate button sizes for touch
 - Stack elements appropriately on small screens
@@ -381,6 +395,7 @@ const breadcrumbItems = useSongBreadcrumbs(songTitle, 'edit');
 ## Component Reference
 
 ### Key Components to Use:
+
 - `Button` - All interactive elements
 - `Dialog` - Modal confirmations and forms
 - `AppBreadcrumb` - Page navigation
@@ -390,9 +405,11 @@ const breadcrumbItems = useSongBreadcrumbs(songTitle, 'edit');
 - `Tooltip` - Contextual help
 
 ### Icon Usage:
+
 Import icons from `lucide-react` and use consistently:
+
 - `Plus` - Create/Add actions
-- `Edit`/`Pencil` - Edit actions  
+- `Edit`/`Pencil` - Edit actions
 - `Trash2` - Delete actions
 - `Play` - Play/View actions
 - `Home` - Home navigation

@@ -16,14 +16,17 @@ User subscription data is stored in the `user` table in `src/db/schema.ts`:
 export const user = pgTable("user", {
   // ... other fields
   stripeCustomerId: text("stripe_customer_id"),
-  subscriptionId: text("subscription_id"), 
-  plan: text("plan").$default(() => "free").notNull(),
+  subscriptionId: text("subscription_id"),
+  plan: text("plan")
+    .$default(() => "free")
+    .notNull(),
   subscriptionStatus: text("subscription_status"),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
 });
 ```
 
 **Key Fields:**
+
 - `plan`: `"free" | "basic" | "pro"` - The user's current subscription tier
 - `subscriptionStatus`: `"active" | "canceled" | "past_due" | "unpaid" | "incomplete"` - Stripe subscription status
 - `subscriptionExpiresAt`: When the current subscription period ends
@@ -44,7 +47,7 @@ export const SUBSCRIPTION_PLANS = {
     features: ["Upload up to 5 songs", "Create 1 playlist", ...]
   },
   BASIC: {
-    name: "Basic", 
+    name: "Basic",
     plan: "basic",
     price: 999, // $9.99 in cents
     priceId: publicEnv.STRIPE_BASIC_PRICE_ID,
@@ -52,7 +55,7 @@ export const SUBSCRIPTION_PLANS = {
   },
   PRO: {
     name: "Pro",
-    plan: "pro", 
+    plan: "pro",
     price: 2999, // $29.99 in cents
     priceId: publicEnv.STRIPE_PRO_PRICE_ID,
     features: ["Unlimited song uploads", "Unlimited playlists", ...]
@@ -61,6 +64,7 @@ export const SUBSCRIPTION_PLANS = {
 ```
 
 **Utility Functions:**
+
 - `getPlanByPriceId(priceId)` - Find plan config by Stripe price ID
 - `getPlanDetails(plan)` - Get plan configuration by plan name
 
@@ -73,16 +77,17 @@ The checkout process starts in `src/fn/subscriptions.ts` with `createCheckoutSes
 ```typescript
 export const createCheckoutSessionFn = createServerFn({ method: "POST" })
   .middleware([authenticatedMiddleware])
-  .validator(createCheckoutSessionSchema)
+  .inputValidator(createCheckoutSessionSchema)
   .handler(async ({ data, context }) => {
     // 1. Validate user and price ID
-    // 2. Create Stripe customer if needed 
+    // 2. Create Stripe customer if needed
     // 3. Create Stripe checkout session
     // 4. Return session URL for redirect
   });
 ```
 
 **Process:**
+
 1. User clicks upgrade button on pricing page
 2. `useCreateCheckoutSession` hook calls `createCheckoutSessionFn`
 3. Server creates Stripe checkout session with:
@@ -95,6 +100,7 @@ export const createCheckoutSessionFn = createServerFn({ method: "POST" })
 ### 2. Checkout Success
 
 When checkout completes successfully:
+
 1. User is redirected to `/settings?success=true`
 2. Stripe sends `checkout.session.completed` webhook
 3. Webhook handler updates user record with subscription details
@@ -106,6 +112,7 @@ Webhooks are handled in `src/routes/api/stripe/webhook.ts`:
 ### Key Webhook Events
 
 **`checkout.session.completed`**
+
 ```typescript
 async function handleCheckoutCompleted(session: any) {
   // 1. Retrieve subscription from Stripe
@@ -122,6 +129,7 @@ async function handleCheckoutCompleted(session: any) {
 ```
 
 **`customer.subscription.created/updated`**
+
 ```typescript
 async function handleSubscriptionChange(subscription: any) {
   // 1. Find user by Stripe customer ID
@@ -130,7 +138,8 @@ async function handleSubscriptionChange(subscription: any) {
 }
 ```
 
-**`customer.subscription.deleted`** 
+**`customer.subscription.deleted`**
+
 ```typescript
 async function handleSubscriptionDeleted(subscription: any) {
   // 1. Find user by customer ID
@@ -150,22 +159,27 @@ async function handleSubscriptionDeleted(subscription: any) {
 ### Core Utilities (`src/utils/subscription.ts`)
 
 **`getUserSubscription(userId: string)`**
+
 - Fetches user's current subscription data from database
 - Returns plan, status, expiry, and Stripe IDs
 
 **`updateUserSubscription(userId: string, subscriptionData: SubscriptionData)`**
+
 - Updates user record with new subscription details
 - Called by webhook handlers
 
 **`isPlanActive(status, expiresAt): boolean`**
+
 - Checks if subscription is active and not expired
 - Used to determine if user has access to paid features
 
 **`hasAccess(userPlan, requiredPlan): boolean`**
+
 - Implements plan hierarchy: free (0) < basic (1) < pro (2)
 - Determines if user's plan meets minimum requirements
 
 **`getUploadLimit(plan): number`**
+
 - Returns upload limits: Free (5), Basic (50), Pro (-1 for unlimited)
 - Used to enforce feature limits
 
@@ -174,20 +188,24 @@ async function handleSubscriptionDeleted(subscription: any) {
 ### `useSubscription` Hook (`src/hooks/useSubscription.ts`)
 
 **`useUserPlan()`**
+
 - Fetches current user's plan data using TanStack Query
 - Automatically enabled when user is authenticated
 - Cached with query key `["user-plan"]`
 
 **`useCreateCheckoutSession()`**
+
 - Mutation hook for starting checkout process
 - Redirects to Stripe checkout on success
 - Shows error toast on failure
 
 **`useCreatePortalSession()`**
+
 - Opens Stripe customer portal in new tab
 - For subscription management (billing, cancellation)
 
 **`useCancelSubscription()`**
+
 - Sets subscription to cancel at period end
 - Shows success message and refreshes page
 
@@ -197,17 +215,17 @@ async function handleSubscriptionDeleted(subscription: any) {
 function SubscriptionButton() {
   const { data: userPlan, isLoading } = useUserPlan();
   const checkoutMutation = useCreateCheckoutSession();
-  
+
   const handleUpgrade = () => {
-    checkoutMutation.mutate({ 
-      data: { priceId: SUBSCRIPTION_PLANS.BASIC.priceId } 
+    checkoutMutation.mutate({
+      data: { priceId: SUBSCRIPTION_PLANS.BASIC.priceId }
     });
   };
-  
+
   if (userPlan?.data?.plan === 'basic') {
     return <span>Already subscribed</span>;
   }
-  
+
   return (
     <button onClick={handleUpgrade} disabled={checkoutMutation.isPending}>
       Upgrade to Basic
@@ -226,19 +244,21 @@ Users can manage their subscriptions through Stripe's customer portal:
 const portalMutation = useCreatePortalSession();
 
 const openPortal = () => {
-  portalMutation.mutate();  // Opens portal in new tab
+  portalMutation.mutate(); // Opens portal in new tab
 };
 ```
 
 **Portal Features:**
+
 - Update payment methods
 - Download invoices
-- Cancel subscription  
+- Cancel subscription
 - View billing history
 
 ### Cancellation
 
 Subscriptions can be canceled through:
+
 1. **App Interface**: `useCancelSubscription()` hook
 2. **Customer Portal**: Stripe-hosted cancellation flow
 
@@ -247,17 +267,20 @@ Both methods set `cancel_at_period_end = true`, allowing users to access paid fe
 ## UI Components
 
 ### `PricingSection` (`src/components/PricingSection.tsx`)
+
 - Displays all three pricing tiers
 - Handles plan selection and checkout initiation
 - Redirects non-authenticated users to sign up
 
 ### `SubscriptionStatus` (`src/components/SubscriptionStatus.tsx`)
+
 - Shows current plan and subscription status
 - Displays billing date and status badges
 - Provides management buttons (billing portal, cancellation)
 - Warns about payment issues
 
-### `PlanBadge` 
+### `PlanBadge`
+
 - Visual indicator of user's current plan
 - Color-coded: Free (gray), Basic (blue), Pro (purple)
 
@@ -270,8 +293,8 @@ The system uses a numeric hierarchy for access control:
 ```typescript
 const planHierarchy = {
   free: 0,
-  basic: 1, 
-  pro: 2
+  basic: 1,
+  pro: 2,
 };
 ```
 
@@ -294,7 +317,7 @@ if (playlistCount >= planLimit) {
 ```typescript
 const uploadLimit = getUploadLimit(user.plan);
 // Free: 5 songs
-// Basic: 50 songs  
+// Basic: 50 songs
 // Pro: -1 (unlimited)
 ```
 
@@ -334,7 +357,7 @@ For testing subscriptions in development:
 ## Security Considerations
 
 - Webhook signature verification prevents tampering
-- Server-side subscription validation 
+- Server-side subscription validation
 - User authentication required for all subscription operations
 - Sensitive Stripe keys stored in server environment only
 - Plan enforcement on server side, not client side
@@ -349,6 +372,7 @@ For testing subscriptions in development:
 4. **Access denied**: Verify `isPlanActive()` and `hasAccess()` logic
 
 **Debugging Tools:**
+
 - Stripe dashboard webhook logs
 - Server console logs in webhook handler
 - Database queries to check subscription status

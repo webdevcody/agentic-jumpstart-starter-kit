@@ -26,6 +26,7 @@ export const auth = betterAuth({
 ```
 
 **Key Features:**
+
 - Uses Drizzle ORM adapter with PostgreSQL
 - Email and password authentication enabled
 - Automatic session management
@@ -42,6 +43,7 @@ export const authClient = createAuthClient({
 ```
 
 **Usage:**
+
 - Provides React hooks for authentication state
 - Handles sign-in/sign-up operations
 - Manages client-side session state
@@ -51,6 +53,7 @@ export const authClient = createAuthClient({
 The authentication system uses several database tables:
 
 #### User Table (`user`)
+
 ```typescript
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -65,12 +68,15 @@ export const user = pgTable("user", {
 ```
 
 #### Session Table (`session`)
+
 ```typescript
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
-  userId: text("user_id").notNull().references(() => user.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   // ... timestamps
@@ -78,18 +84,22 @@ export const session = pgTable("session", {
 ```
 
 #### Account Table (`account`)
+
 ```typescript
 export const account = pgTable("account", {
   id: text("id").primaryKey(),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
-  userId: text("user_id").notNull().references(() => user.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
   password: text("password"), // For email/password auth
   // ... OAuth tokens and timestamps
 });
 ```
 
 #### Verification Table (`verification`)
+
 ```typescript
 export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
@@ -122,6 +132,7 @@ const onSubmit = async (data: SignUpForm) => {
 ```
 
 **Process:**
+
 1. User submits registration form with email, password, and name
 2. `authClient.signUp.email()` creates user account and session
 3. Better Auth automatically handles password hashing and user creation
@@ -149,6 +160,7 @@ const onSubmit = async (data: SignInForm) => {
 ```
 
 **Process:**
+
 1. User submits credentials
 2. Better Auth validates email/password against database
 3. Creates new session on successful authentication
@@ -168,6 +180,7 @@ export const ServerRoute = createServerFileRoute("/api/auth/$").methods({
 ```
 
 **Purpose:**
+
 - Catch-all route for Better Auth API endpoints
 - Handles authentication requests like `/api/auth/sign-in`, `/api/auth/sign-up`, etc.
 - Better Auth automatically generates these endpoints
@@ -185,7 +198,7 @@ export const authenticatedMiddleware = createMiddleware({
   if (!request?.headers) {
     throw new Error("No headers");
   }
-  
+
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session) {
@@ -199,6 +212,7 @@ export const authenticatedMiddleware = createMiddleware({
 ```
 
 **Key Features:**
+
 - Validates session from request headers
 - Throws error if no valid session
 - Provides `userId` in context for authenticated operations
@@ -210,26 +224,29 @@ Example from `src/fn/songs.ts`:
 
 ```typescript
 export const createSongFn = createServerFn({ method: "POST" })
-  .validator(z.object({
-    title: z.string().min(1),
-    artist: z.string().min(1),
-    // ... other fields
-  }))
+  .inputValidator(
+    z.object({
+      title: z.string().min(1),
+      artist: z.string().min(1),
+      // ... other fields
+    })
+  )
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { userId } = context; // Available from middleware
-    
+
     const songData = {
       ...data,
       userId, // Associate song with authenticated user
       id: crypto.randomUUID(),
     };
-    
+
     return await createSong(songData);
   });
 ```
 
 **Pattern:**
+
 1. Apply `authenticatedMiddleware` to server functions
 2. Access `userId` from context
 3. Use `userId` for authorization and data association
@@ -243,13 +260,13 @@ import { authClient } from "~/lib/auth-client";
 
 function MyComponent() {
   const { data: session, isPending } = authClient.useSession();
-  
+
   if (isPending) return <div>Loading...</div>;
-  
+
   if (!session) {
     return <div>Please sign in</div>;
   }
-  
+
   return <div>Welcome {session.user.name}!</div>;
 }
 ```
@@ -259,7 +276,7 @@ function MyComponent() {
 ```typescript
 export function useUpdateUserProfile() {
   const { refetch: refetchSession } = authClient.useSession();
-  
+
   return useMutation({
     mutationFn: updateUserProfileFn,
     onSuccess: () => {
@@ -292,9 +309,9 @@ export async function getUserPlan(userId: string): Promise<{
   expiresAt: Date | null;
 }> {
   const userData = await findUserById(userId);
-  
+
   // ... plan logic
-  
+
   return { plan, isActive, expiresAt };
 }
 ```
@@ -302,16 +319,19 @@ export async function getUserPlan(userId: string): Promise<{
 ## Authentication Utilities
 
 ### 1. Session Validation
+
 - Better Auth automatically validates sessions via cookies
 - Sessions include user ID and expiration time
 - Session tokens are stored securely in database
 
 ### 2. Password Security
+
 - Passwords are automatically hashed by Better Auth
 - Uses industry-standard bcrypt hashing
 - Salt rounds and security handled internally
 
 ### 3. CSRF Protection
+
 - Better Auth includes CSRF protection by default
 - Validates requests using secure headers
 - Protects against cross-site request forgery
@@ -332,6 +352,7 @@ BETTER_AUTH_URL="http://localhost:3000"
 ## Common Patterns
 
 ### 1. Protecting Routes
+
 ```typescript
 // In route component
 const { data: session } = authClient.useSession();
@@ -342,6 +363,7 @@ if (!session) {
 ```
 
 ### 2. Conditional Rendering
+
 ```typescript
 const { data: session } = authClient.useSession();
 
@@ -357,6 +379,7 @@ return (
 ```
 
 ### 3. Server Function Authorization
+
 ```typescript
 export const protectedFunction = createServerFn()
   .middleware([authenticatedMiddleware])
@@ -379,7 +402,7 @@ export const protectedFunction = createServerFn()
 ### Common Issues
 
 1. **"No session" errors**: Ensure `authenticatedMiddleware` is applied to protected functions
-2. **Authentication loops**: Check redirect logic in sign-in/sign-up flows  
+2. **Authentication loops**: Check redirect logic in sign-in/sign-up flows
 3. **Session not persisting**: Verify cookie settings and database connection
 4. **Type errors**: Ensure Better Auth types are properly imported
 
@@ -388,11 +411,11 @@ export const protectedFunction = createServerFn()
 ```typescript
 // Check current session server-side
 const session = await auth.api.getSession({ headers: request.headers });
-console.log('Current session:', session);
+console.log("Current session:", session);
 
 // Check session client-side
 const { data: session } = authClient.useSession();
-console.log('Client session:', session);
+console.log("Client session:", session);
 ```
 
 ## Migration and Setup

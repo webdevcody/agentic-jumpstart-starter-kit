@@ -5,7 +5,7 @@ import { authenticatedMiddleware } from "./middleware";
 
 export const getPresignedAudioUploadUrlFn = createServerFn({ method: "POST" })
   .middleware([authenticatedMiddleware])
-  .validator(
+  .inputValidator(
     z.object({
       fileName: z.string(),
       contentType: z.string(),
@@ -13,25 +13,30 @@ export const getPresignedAudioUploadUrlFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const userId = context.userId;
-    
+
     if (!userId) {
       throw new Error("User not authenticated");
     }
-    
+
     // Generate unique song ID and create S3 key
     const songId = crypto.randomUUID();
-    const fileExtension = data.fileName.split('.').pop() || '';
+    const fileExtension = data.fileName.split(".").pop() || "";
     const audioKey = `music/${userId}/${songId}/audio.${fileExtension}`;
-    
+
     const { storage } = getStorage();
-    const presignedUrl = await storage.getPresignedUploadUrl(audioKey, data.contentType);
+    const presignedUrl = await storage.getPresignedUploadUrl(
+      audioKey,
+      data.contentType
+    );
 
     return { presignedUrl, audioKey, songId };
   });
 
-export const getPresignedCoverImageUploadUrlFn = createServerFn({ method: "POST" })
+export const getPresignedCoverImageUploadUrlFn = createServerFn({
+  method: "POST",
+})
   .middleware([authenticatedMiddleware])
-  .validator(
+  .inputValidator(
     z.object({
       songId: z.string(),
       fileName: z.string(),
@@ -40,22 +45,25 @@ export const getPresignedCoverImageUploadUrlFn = createServerFn({ method: "POST"
   )
   .handler(async ({ data, context }) => {
     const userId = context.userId;
-    
+
     if (!userId) {
       throw new Error("User not authenticated");
     }
-    
-    const fileExtension = data.fileName.split('.').pop() || '';
+
+    const fileExtension = data.fileName.split(".").pop() || "";
     const coverKey = `music/${userId}/${data.songId}/cover.${fileExtension}`;
-    
+
     const { storage } = getStorage();
-    const presignedUrl = await storage.getPresignedUploadUrl(coverKey, data.contentType);
+    const presignedUrl = await storage.getPresignedUploadUrl(
+      coverKey,
+      data.contentType
+    );
 
     return { presignedUrl, coverKey };
   });
 
 export const getAudioUrlFn = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     z.object({
       audioKey: z.string(),
     })
@@ -68,7 +76,7 @@ export const getAudioUrlFn = createServerFn({ method: "POST" })
   });
 
 export const getCoverImageUrlFn = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     z.object({
       coverKey: z.string(),
     })
@@ -76,6 +84,5 @@ export const getCoverImageUrlFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { storage } = getStorage();
     const coverUrl = await storage.getPresignedUrl(data.coverKey);
-
     return { coverUrl };
   });

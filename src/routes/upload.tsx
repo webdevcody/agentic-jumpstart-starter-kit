@@ -194,7 +194,7 @@ function Upload() {
       {
         ...data,
         audioKey: uploadResult.audioKey,
-        coverImageKey: uploadResult.coverImageKey,
+        coverImageKey: uploadResult.coverImageKey ?? undefined,
         duration: uploadResult.duration,
       },
       {

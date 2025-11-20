@@ -5,67 +5,69 @@ import { user } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { privateEnv } from "~/config/privateEnv";
 import type { SubscriptionPlan, SubscriptionStatus } from "~/db/schema";
-import { createServerFileRoute } from "@tanstack/react-start/server";
 import { getPlanByPriceId } from "~/lib/plans";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const ServerRoute = createServerFileRoute("/api/stripe/webhook").methods(
-  {
-    POST: async ({ request }) => {
-      const body = await request.text();
-      const sig = request.headers.get("stripe-signature");
+export const Route = createFileRoute("/api/stripe/webhook")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const body = await request.text();
+        const sig = request.headers.get("stripe-signature");
 
-      if (!sig) {
-        return Response.json(
-          { error: "Missing stripe signature" },
-          { status: 400 }
-        );
-      }
-
-      let event: any;
-
-      try {
-        event = stripe.webhooks.constructEvent(
-          body,
-          sig,
-          privateEnv.STRIPE_WEBHOOK_SECRET
-        );
-      } catch (err) {
-        console.error("Webhook signature verification failed:", err);
-        return Response.json({ error: "Invalid signature" }, { status: 400 });
-      }
-
-      console.log("Received Stripe webhook:", event.type);
-
-      try {
-        switch (event.type) {
-          case "checkout.session.completed":
-            await handleCheckoutCompleted(event.data.object);
-            break;
-
-          case "customer.subscription.created":
-          case "customer.subscription.updated":
-            await handleSubscriptionChange(event.data.object);
-            break;
-
-          case "customer.subscription.deleted":
-            await handleSubscriptionDeleted(event.data.object);
-            break;
-
-          default:
-            console.log(`Unhandled event type: ${event.type}`);
+        if (!sig) {
+          return Response.json(
+            { error: "Missing stripe signature" },
+            { status: 400 }
+          );
         }
 
-        return Response.json({ received: true });
-      } catch (error) {
-        console.error("Error processing webhook:", error);
-        return Response.json(
-          { error: "Webhook processing failed" },
-          { status: 500 }
-        );
-      }
+        let event: any;
+
+        try {
+          event = stripe.webhooks.constructEvent(
+            body,
+            sig,
+            privateEnv.STRIPE_WEBHOOK_SECRET
+          );
+        } catch (err) {
+          console.error("Webhook signature verification failed:", err);
+          return Response.json({ error: "Invalid signature" }, { status: 400 });
+        }
+
+        console.log("Received Stripe webhook:", event.type);
+
+        try {
+          switch (event.type) {
+            case "checkout.session.completed":
+              await handleCheckoutCompleted(event.data.object);
+              break;
+
+            case "customer.subscription.created":
+            case "customer.subscription.updated":
+              await handleSubscriptionChange(event.data.object);
+              break;
+
+            case "customer.subscription.deleted":
+              await handleSubscriptionDeleted(event.data.object);
+              break;
+
+            default:
+              console.log(`Unhandled event type: ${event.type}`);
+          }
+
+          return Response.json({ received: true });
+        } catch (error) {
+          console.error("Error processing webhook:", error);
+          return Response.json(
+            { error: "Webhook processing failed" },
+            { status: 500 }
+          );
+        }
+      },
     },
-  }
-);
+  },
+});
 
 async function handleCheckoutCompleted(session: any) {
   console.log("Handling checkout completed:", session.id);

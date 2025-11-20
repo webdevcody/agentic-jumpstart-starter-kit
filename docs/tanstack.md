@@ -127,7 +127,7 @@ export const getRecentSongsFn = createServerFn().handler(async () => {
 export const createSongFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       title: z.string().min(2).max(100),
       artist: z.string().min(1).max(50),
@@ -180,13 +180,13 @@ export const getPopularSongsFn = createServerFn().handler(async () => {
 export const createSongFn = createServerFn({
   method: "POST",
 })
-  .validator(/* validation schema */)
-  .middleware([authenticatedMiddleware])  // 👈 Authentication required
+  .inputValidator(/* validation schema */)
+  .middleware([authenticatedMiddleware]) // 👈 Authentication required
   .handler(async ({ data, context }) => {
     // context.userId is available from middleware
     const songData = {
       ...data,
-      userId: context.userId,  // 👈 User ID from auth context
+      userId: context.userId, // 👈 User ID from auth context
     };
     return await createSong(songData);
   });
@@ -199,11 +199,11 @@ export const createSongFn = createServerFn({
 export const updateSongFn = createServerFn({
   method: "POST",
 })
-  .validator(/* schema */)
+  .inputValidator(/* schema */)
   .middleware([authenticatedMiddleware])
   .handler(async ({ data, context }) => {
     const { id, ...updateData } = data;
-    
+
     // Verify ownership before allowing update
     const existingSong = await findSongById(id);
     if (existingSong.userId !== context.userId) {
@@ -262,9 +262,9 @@ import { createSongFn, deleteSongFn, updateSongFn } from "~/fn/songs";
 
 export function useCreateSong() {
   const navigate = useNavigate();
-  
+
   return useMutation({
-    mutationFn: (data: Parameters<typeof createSongFn>[0]['data']) => 
+    mutationFn: (data: Parameters<typeof createSongFn>[0]["data"]) =>
       createSongFn({ data }),
     onSuccess: (song) => {
       toast.success("Song created successfully!");
@@ -278,7 +278,7 @@ export function useCreateSong() {
 
 export function useDeleteSong() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => deleteSongFn({ data: { id } }),
     onSuccess: () => {
@@ -301,7 +301,7 @@ import { useCreateSong } from "~/hooks/useSongs";
 
 function Upload() {
   const createSongMutation = useCreateSong();
-  
+
   const onSubmit = async (data) => {
     // Hook handles navigation, error handling, etc.
     createSongMutation.mutate(data);
@@ -320,13 +320,14 @@ function Upload() {
 ### Separation of Concerns
 
 1. **Server functions** (`src/fn/`): Business logic, validation, database operations
-2. **Queries** (`src/queries/`): Data fetching configuration and caching strategy  
+2. **Queries** (`src/queries/`): Data fetching configuration and caching strategy
 3. **Hooks** (`src/hooks/`): UI state management, navigation, toast notifications
 4. **Components**: Pure UI logic, form handling, user interactions
 
 ### Type Safety
 
 The entire stack is fully type-safe:
+
 - Server functions use Zod validation schemas
 - Queries infer return types from server functions
 - Hooks maintain type safety through the chain
@@ -335,6 +336,7 @@ The entire stack is fully type-safe:
 ### Testability
 
 Each layer can be tested independently:
+
 - Server functions can be unit tested
 - Queries can be tested with mock data
 - Hooks can be tested with React Testing Library
@@ -343,6 +345,7 @@ Each layer can be tested independently:
 ### Cache Management
 
 TanStack Query handles sophisticated caching:
+
 - Automatic background refetching
 - Optimistic updates
 - Cache invalidation strategies
@@ -351,6 +354,7 @@ TanStack Query handles sophisticated caching:
 ### Authentication Integration
 
 Authentication is handled at multiple layers:
+
 - **Middleware**: Server-side session validation
 - **Hooks**: Client-side session checks and redirects
 - **Components**: Conditional rendering based on auth state

@@ -19,12 +19,14 @@ Each layer builds upon the previous one, creating a clear dependency chain and s
 **Purpose**: Handles URL routing, route parameters, and page-level data loading.
 
 **Responsibilities**:
+
 - Define route structure and parameters
 - Handle route loaders for data prefetching
 - Compose page components
 - Manage route-level state and navigation
 
 **Example**: `src/routes/song/$id/index.tsx`
+
 ```typescript
 export const Route = createFileRoute("/song/$id/")({
   loader: ({ context: { queryClient }, params: { id } }) => {
@@ -45,21 +47,23 @@ function SongDetail() {
 **Purpose**: Reusable UI components that handle presentation and user interactions.
 
 **Responsibilities**:
+
 - Render UI elements
 - Handle user interactions
 - Manage local component state
 - Delegate data operations to hooks
 
 **Example**: `src/components/SongCard.tsx`
+
 ```typescript
 export function SongCard({ song }: SongCardProps) {
   const { handleAddToPlaylist, isInPlaylist } = useAddToPlaylist();
-  
+
   const handleAddToPlaylistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     addToPlaylist(playlistSong);
   };
-  
+
   return (
     <article className="bg-card rounded-xl">
       {/* UI rendering logic */}
@@ -73,18 +77,20 @@ export function SongCard({ song }: SongCardProps) {
 **Purpose**: Custom React hooks that manage component state and provide reusable logic.
 
 **Responsibilities**:
+
 - Wrap TanStack Query operations
 - Handle complex state logic
 - Provide reusable stateful behavior
 - Bridge components to queries
 
 **Example**: `src/hooks/useSongs.ts`
+
 ```typescript
 export function useCreateSong() {
   const navigate = useNavigate();
-  
+
   return useMutation({
-    mutationFn: (data: Parameters<typeof createSongFn>[0]['data']) => 
+    mutationFn: (data: Parameters<typeof createSongFn>[0]["data"]) =>
       createSongFn({ data }),
     onSuccess: (song) => {
       toast.success("Song created successfully!");
@@ -102,12 +108,14 @@ export function useCreateSong() {
 **Purpose**: TanStack Query definitions that define how data is fetched and cached.
 
 **Responsibilities**:
+
 - Define query keys for caching
 - Configure query options
 - Connect to server functions
 - Handle query invalidation patterns
 
 **Example**: `src/queries/songs.ts`
+
 ```typescript
 export const getSongByIdQuery = (id: string) =>
   queryOptions({
@@ -127,6 +135,7 @@ export const getUserSongsQuery = () =>
 **Purpose**: Server functions that handle HTTP endpoints, validation, and authentication.
 
 **Responsibilities**:
+
 - Define API endpoints
 - Handle input validation with Zod
 - Apply middleware (authentication, authorization)
@@ -134,11 +143,12 @@ export const getUserSongsQuery = () =>
 - Transform data for client consumption
 
 **Example**: `src/fn/songs.ts`
+
 ```typescript
 export const createSongFn = createServerFn({
   method: "POST",
 })
-  .validator(
+  .inputValidator(
     z.object({
       title: z.string().min(2).max(100),
       artist: z.string().min(1).max(50),
@@ -164,6 +174,7 @@ export const createSongFn = createServerFn({
 **Purpose**: Complex business logic that orchestrates multiple data access operations.
 
 **Responsibilities**:
+
 - Implement business rules and policies
 - Coordinate multiple data operations
 - Handle complex validation logic
@@ -171,6 +182,7 @@ export const createSongFn = createServerFn({
 - Provide error handling with business context
 
 **Example**: `src/use-cases/createPlaylistUseCase.ts`
+
 ```typescript
 export async function createPlaylistUseCase(
   input: CreatePlaylistInput
@@ -206,6 +218,7 @@ export async function createPlaylistUseCase(
 **Purpose**: Direct database operations using Drizzle ORM.
 
 **Responsibilities**:
+
 - Execute database queries
 - Handle database transactions
 - Perform CRUD operations
@@ -213,6 +226,7 @@ export async function createPlaylistUseCase(
 - Generate presigned URLs for file storage
 
 **Example**: `src/data-access/songs.ts`
+
 ```typescript
 export async function findSongById(id: string): Promise<Song | null> {
   const [result] = await database
@@ -240,6 +254,7 @@ export async function createSong(songData: CreateSongData): Promise<Song> {
 ## Dependency Flow
 
 ### Data Flow (Top to Bottom)
+
 1. **Route** defines loader and renders component
 2. **Component** uses hooks for data and interactions
 3. **Hook** calls queries for server state management
@@ -249,11 +264,12 @@ export async function createSong(songData: CreateSongData): Promise<Song> {
 7. **Data Access** executes database operations
 
 ### Example: Creating a Song
+
 ```typescript
 // 1. Route handles the form submission
 function UploadPage() {
   const createSong = useCreateSong(); // Hook
-  
+
   const handleSubmit = (data) => {
     createSong.mutate(data);
   };
@@ -268,7 +284,7 @@ function useCreateSong() {
 
 // 3. Server function validates and processes
 export const createSongFn = createServerFn()
-  .validator(songSchema)
+  .inputValidator(songSchema)
   .handler(async ({ data, context }) => {
     return await createSong(songData); // Direct to data access
   });
