@@ -1,9 +1,8 @@
-version: "3.9"
 services:
-  tech-tube-db:
+  automaker-starter-kit:
     image: postgres:17
     restart: always
-    container_name: tech-tube-db
+    container_name: automaker-starter-kit-db
     ports:
       - 5432:5432
     environment:
