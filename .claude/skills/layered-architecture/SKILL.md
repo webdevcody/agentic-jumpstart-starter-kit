@@ -34,6 +34,7 @@ routes  →  components  →  hooks  →  queries  →  fn  →  (use-cases)  �
 2. **Is there a business rule beyond "validate input + persist"?** (limits, multi-entity coordination, policy) → wrap in a `*UseCase` in `src/use-cases/`. Otherwise the `fn` calls data-access directly.
 3. **Does the component need server state?** It calls a hook. The hook calls a query. The query calls the `fn`. Do not shortcut.
 4. **Is this a route loader?** Use `queryClient.ensureQueryData(someQuery(...))` — never call `fn`s or data-access directly from a loader.
+5. **Tempted to skip a layer "just this once"?** Name the failure mode in the NEVER list that you believe doesn't apply here, and say why this case is genuinely different. If you can't, you're rationalizing — follow the chain.
 
 ## NEVER
 
