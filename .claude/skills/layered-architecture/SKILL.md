@@ -15,6 +15,9 @@ routes  →  components  →  hooks  →  queries  →  fn  →  (use-cases)  �
 
 ## Where each concern lives
 
+> Quick lookup — full layer purposes are in `docs/architecture.md`. Do NOT re-read that doc unless this table is ambiguous for your case.
+
+
 | Concern | Layer |
 |---|---|
 | URL params, route loaders calling `queryClient.ensureQueryData` | `src/routes/` |
