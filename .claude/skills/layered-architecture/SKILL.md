@@ -11,6 +11,8 @@ The dependency chain is fixed. Each layer imports only from layers below it.
 routes  →  components  →  hooks  →  queries  →  fn  →  (use-cases)  →  data-access  →  db
 ```
 
+Third-party infra I/O (Stripe API calls, S3/R2 presigning, email send) is **data-access-shaped** — wrap each provider in a module under `src/data-access/` (e.g. `data-access/stripe.ts`) and call it from `fn` or a use case. Do not call SDKs directly from `fn/` or `use-cases/`.
+
 `use-cases` is **optional** — only insert it when business rules span multiple `data-access` calls or enforce policy (plan limits, ownership across entities, multi-step invariants). Plain CRUD goes `fn → data-access` directly.
 
 ## Where each concern lives
