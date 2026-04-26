@@ -72,13 +72,13 @@ Third-party infra I/O (Stripe API calls, S3/R2 presigning, email send) is **data
   **Instead:** Extract the shared logic into a use case or a data-access function and have both fns call it.
   **Why:** fn-to-fn calls double-run validation/middleware and serialize through HTTP semantics needlessly; the shared logic belongs one layer down.
 
-## Quick decision: "I need to add a new feature endpoint X"
+## Self-check before opening a PR
 
-1. Write the SQL-shaped operation(s) in `src/data-access/<entity>.ts`.
-2. If business rules span multiple ops or enforce policy → write `src/use-cases/<verb><Entity>UseCase.ts`. Otherwise skip.
-3. Write `src/fn/<entity>.ts` with `createServerFn` + Zod validator + `authenticatedMiddleware` (if needed) + ownership check + call the use case or data-access.
-4. Add `queryOptions` to `src/queries/<entity>.ts` (for reads) — mutations don't need a query entry.
-5. Add a `use<Verb><Entity>` hook in `src/hooks/use<Entity>.ts` wrapping `useQuery`/`useMutation`, including toasts, navigation, and `invalidateQueries`.
-6. Consume the hook from the component or route. Route loaders use `ensureQueryData(theQuery(...))`.
+Walk these questions in order. If any answer is "no" or "I'm not sure", you have more work before this is shippable:
 
-If you find yourself wanting to skip a step, re-read the NEVER list — the step exists because skipping it has bitten this codebase before.
+1. Is every Drizzle query and every third-party SDK call confined to a module in `src/data-access/<entity>.ts`?
+2. If there are business rules beyond validate-and-persist, do they live in a `src/use-cases/<verb><Entity>UseCase.ts` — and does the use case receive a trusted `userId` rather than re-deriving auth?
+3. Does the `src/fn/<entity>.ts` handler own the Zod `inputValidator`, the `authenticatedMiddleware`, the ownership check, and nothing more than orchestrating data-access / a use case?
+4. For reads: is the `queryOptions` defined in `src/queries/<entity>.ts` (one source of truth for the query key) and consumed by both the hook and any route loader via `ensureQueryData`?
+5. Does a `use<Verb><Entity>` hook in `src/hooks/` own toasts, `navigate(...)`, and `invalidateQueries` — so the component never touches `fn/` or `queries/` directly?
+6. If you skipped any of the above, can you point at the specific NEVER above whose failure mode does not apply to this case — and say why?
