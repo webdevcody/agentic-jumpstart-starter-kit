@@ -119,10 +119,10 @@ export function Footer() {
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center space-x-2">
               <Rocket className="h-6 w-6" />
-              <span className="font-semibold">Launch Kit</span>
+              <span className="font-semibold">AgentSystemLabs' Launch Kit</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2026 Launch Kit. All rights reserved.
+              © 2026 AgentSystemLabs' Launch Kit. All rights reserved.
             </p>
           </div>
         </div>

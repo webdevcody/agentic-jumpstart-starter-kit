@@ -29,7 +29,7 @@ export function Header() {
         <div className="mr-4 flex gap-16">
           <Link to="/" className="mr-6 flex items-center space-x-2">
             <Rocket />
-            <span className="hidden font-bold sm:inline-block">Launch Kit</span>
+            <span className="hidden font-bold sm:inline-block">AgentSystemLabs' Launch Kit</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm">
@@ -72,7 +72,7 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Rocket className="h-6 w-6" />
-                <span className="font-bold">Launch Kit</span>
+                <span className="font-bold">AgentSystemLabs' Launch Kit</span>
               </Link>
               <nav className="flex flex-col gap-3 mt-6">
                 {navigationLinks.map((link) => (
