@@ -1,0 +1,124 @@
+import { jsxDEV } from "react/jsx-dev-runtime";
+function PrivacyPage() {
+  return /* @__PURE__ */ jsxDEV("div", { className: "container mx-auto max-w-3xl px-6 py-16", children: [
+    /* @__PURE__ */ jsxDEV("h1", { className: "text-4xl font-bold tracking-tight mb-2", children: "Privacy Policy" }, void 0, false, {
+      fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+      lineNumber: 3,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-muted-foreground mb-10", children: "Last updated: TODO — replace with your launch date." }, void 0, false, {
+      fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+      lineNumber: 4,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("section", { className: "prose prose-neutral dark:prose-invert max-w-none space-y-8", children: [
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl font-semibold mb-2", children: "1. Information we collect" }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 10,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-muted-foreground", children: "TODO — describe what your application collects (account email, uploaded files, payment metadata via Stripe, etc.)." }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 11,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+        lineNumber: 9,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl font-semibold mb-2", children: "2. How we use it" }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 18,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-muted-foreground", children: "TODO — describe how data is used (authenticate the user, deliver the service, send transactional email, etc.)." }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 19,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+        lineNumber: 17,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl font-semibold mb-2", children: "3. Cookies and storage" }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 26,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-muted-foreground", children: "TODO — describe session cookies (Better Auth) and any analytics or preference cookies you add." }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 27,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+        lineNumber: 25,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl font-semibold mb-2", children: "4. Third-party services" }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 34,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-muted-foreground", children: "TODO — list third parties (Stripe for payments, Google for OAuth, Cloudflare R2 / AWS S3 for file storage, etc.)." }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 35,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+        lineNumber: 33,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl font-semibold mb-2", children: "5. Your rights" }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 42,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-muted-foreground", children: "You can update your profile or delete your account at any time from your account page." }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 43,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+        lineNumber: 41,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl font-semibold mb-2", children: "6. Contact" }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 50,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-muted-foreground", children: "TODO — add a contact email for privacy inquiries." }, void 0, false, {
+          fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+          lineNumber: 51,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+        lineNumber: 49,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+      lineNumber: 8,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/webdevcody/Workspace/AgentSystemLabs/launch-kit/src/routes/privacy.tsx?tsr-split=component",
+    lineNumber: 2,
+    columnNumber: 10
+  }, this);
+}
+export {
+  PrivacyPage as component
+};

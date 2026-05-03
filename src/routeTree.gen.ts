@@ -9,28 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UploadRouteImport } from './routes/upload'
 import { Route as UnauthenticatedRouteImport } from './routes/unauthenticated'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as PlaylistsRouteImport } from './routes/playlists'
-import { Route as MySongsRouteImport } from './routes/my-songs'
-import { Route as BrowseRouteImport } from './routes/browse'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SongIdIndexRouteImport } from './routes/song/$id/index'
-import { Route as SongIdEditRouteImport } from './routes/song/$id/edit'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
-const UploadRoute = UploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const UnauthenticatedRoute = UnauthenticatedRouteImport.update({
   id: '/unauthenticated',
   path: '/unauthenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignUpRoute = SignUpRouteImport.update({
@@ -43,39 +40,24 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlaylistsRoute = PlaylistsRouteImport.update({
-  id: '/playlists',
-  path: '/playlists',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MySongsRoute = MySongsRouteImport.update({
-  id: '/my-songs',
-  path: '/my-songs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrowseRoute = BrowseRouteImport.update({
-  id: '/browse',
-  path: '/browse',
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SongIdIndexRoute = SongIdIndexRouteImport.update({
-  id: '/song/$id/',
-  path: '/song/$id/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SongIdEditRoute = SongIdEditRouteImport.update({
-  id: '/song/$id/edit',
-  path: '/song/$id/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
@@ -91,128 +73,107 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/browse': typeof BrowseRoute
-  '/my-songs': typeof MySongsRoute
-  '/playlists': typeof PlaylistsRoute
-  '/settings': typeof SettingsRoute
+  '/account': typeof AccountRoute
+  '/dashboard': typeof DashboardRoute
+  '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/terms': typeof TermsRoute
   '/unauthenticated': typeof UnauthenticatedRoute
-  '/upload': typeof UploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
-  '/song/$id/edit': typeof SongIdEditRoute
-  '/song/$id': typeof SongIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/browse': typeof BrowseRoute
-  '/my-songs': typeof MySongsRoute
-  '/playlists': typeof PlaylistsRoute
-  '/settings': typeof SettingsRoute
+  '/account': typeof AccountRoute
+  '/dashboard': typeof DashboardRoute
+  '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/terms': typeof TermsRoute
   '/unauthenticated': typeof UnauthenticatedRoute
-  '/upload': typeof UploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
-  '/song/$id/edit': typeof SongIdEditRoute
-  '/song/$id': typeof SongIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/browse': typeof BrowseRoute
-  '/my-songs': typeof MySongsRoute
-  '/playlists': typeof PlaylistsRoute
-  '/settings': typeof SettingsRoute
+  '/account': typeof AccountRoute
+  '/dashboard': typeof DashboardRoute
+  '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/terms': typeof TermsRoute
   '/unauthenticated': typeof UnauthenticatedRoute
-  '/upload': typeof UploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
-  '/song/$id/edit': typeof SongIdEditRoute
-  '/song/$id/': typeof SongIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/browse'
-    | '/my-songs'
-    | '/playlists'
-    | '/settings'
+    | '/account'
+    | '/dashboard'
+    | '/privacy'
     | '/sign-in'
     | '/sign-up'
+    | '/terms'
     | '/unauthenticated'
-    | '/upload'
     | '/api/auth/$'
     | '/api/stripe/webhook'
-    | '/song/$id/edit'
-    | '/song/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/browse'
-    | '/my-songs'
-    | '/playlists'
-    | '/settings'
+    | '/account'
+    | '/dashboard'
+    | '/privacy'
     | '/sign-in'
     | '/sign-up'
+    | '/terms'
     | '/unauthenticated'
-    | '/upload'
     | '/api/auth/$'
     | '/api/stripe/webhook'
-    | '/song/$id/edit'
-    | '/song/$id'
   id:
     | '__root__'
     | '/'
-    | '/browse'
-    | '/my-songs'
-    | '/playlists'
-    | '/settings'
+    | '/account'
+    | '/dashboard'
+    | '/privacy'
     | '/sign-in'
     | '/sign-up'
+    | '/terms'
     | '/unauthenticated'
-    | '/upload'
     | '/api/auth/$'
     | '/api/stripe/webhook'
-    | '/song/$id/edit'
-    | '/song/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BrowseRoute: typeof BrowseRoute
-  MySongsRoute: typeof MySongsRoute
-  PlaylistsRoute: typeof PlaylistsRoute
-  SettingsRoute: typeof SettingsRoute
+  AccountRoute: typeof AccountRoute
+  DashboardRoute: typeof DashboardRoute
+  PrivacyRoute: typeof PrivacyRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  TermsRoute: typeof TermsRoute
   UnauthenticatedRoute: typeof UnauthenticatedRoute
-  UploadRoute: typeof UploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
-  SongIdEditRoute: typeof SongIdEditRoute
-  SongIdIndexRoute: typeof SongIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/upload': {
-      id: '/upload'
-      path: '/upload'
-      fullPath: '/upload'
-      preLoaderRoute: typeof UploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/unauthenticated': {
       id: '/unauthenticated'
       path: '/unauthenticated'
       fullPath: '/unauthenticated'
       preLoaderRoute: typeof UnauthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-up': {
@@ -229,32 +190,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/playlists': {
-      id: '/playlists'
-      path: '/playlists'
-      fullPath: '/playlists'
-      preLoaderRoute: typeof PlaylistsRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/my-songs': {
-      id: '/my-songs'
-      path: '/my-songs'
-      fullPath: '/my-songs'
-      preLoaderRoute: typeof MySongsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/browse': {
-      id: '/browse'
-      path: '/browse'
-      fullPath: '/browse'
-      preLoaderRoute: typeof BrowseRouteImport
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -262,20 +216,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/song/$id/': {
-      id: '/song/$id/'
-      path: '/song/$id'
-      fullPath: '/song/$id'
-      preLoaderRoute: typeof SongIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/song/$id/edit': {
-      id: '/song/$id/edit'
-      path: '/song/$id/edit'
-      fullPath: '/song/$id/edit'
-      preLoaderRoute: typeof SongIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/stripe/webhook': {
@@ -297,18 +237,15 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BrowseRoute: BrowseRoute,
-  MySongsRoute: MySongsRoute,
-  PlaylistsRoute: PlaylistsRoute,
-  SettingsRoute: SettingsRoute,
+  AccountRoute: AccountRoute,
+  DashboardRoute: DashboardRoute,
+  PrivacyRoute: PrivacyRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  TermsRoute: TermsRoute,
   UnauthenticatedRoute: UnauthenticatedRoute,
-  UploadRoute: UploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
-  SongIdEditRoute: SongIdEditRoute,
-  SongIdIndexRoute: SongIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

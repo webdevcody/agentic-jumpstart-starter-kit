@@ -51,7 +51,7 @@ export function PricingSection({ showTitle = true }: PricingSectionProps) {
   const isLoadingState = sessionLoading || planLoading;
 
   const handleManagePlans = () => {
-    router.navigate({ to: "/settings" });
+    router.navigate({ to: "/account" });
   };
 
   return (

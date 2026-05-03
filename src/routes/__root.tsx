@@ -7,7 +7,6 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import * as React from "react";
-import { useState } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
@@ -17,13 +16,10 @@ import appCss from "~/styles/app.css?url";
 import { seo } from "~/utils/seo";
 import { Header } from "~/components/Header";
 import { ThemeProvider } from "~/components/theme-provider";
-import { PlaylistProvider } from "~/components/playlist-provider";
 import { Toaster } from "~/components/ui/sonner";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import { Footer } from "~/components/Footer";
-import { MusicPlayer } from "~/components/MusicPlayer";
-import { PlaylistSheet } from "~/components/PlaylistSheet";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -88,7 +84,6 @@ function RootComponent() {
 function RootDocument({ children }: { children: React.ReactNode }) {
   const routerState = useRouterState();
   const prevPathnameRef = React.useRef("");
-  const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
 
   React.useEffect(() => {
     const currentPathname = routerState.location.pathname;
@@ -165,22 +160,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-          <PlaylistProvider>
-            <div className="min-h-screen bg-background pb-20">
-              <Header onOpenPlaylist={() => setIsPlaylistOpen(true)} />
-              <main>{children}</main>
-              <Footer />
-            </div>
-            <MusicPlayer onOpenPlaylist={() => setIsPlaylistOpen(true)} />
-            <PlaylistSheet
-              open={isPlaylistOpen}
-              onOpenChange={setIsPlaylistOpen}
-            />
-            <TanStackRouterDevtools position="bottom-right" />
-            <ReactQueryDevtools buttonPosition="bottom-left" />
-            <Toaster />
-            <Scripts />
-          </PlaylistProvider>
+          <div className="min-h-screen bg-background">
+            <Header />
+            <main>{children}</main>
+            <Footer />
+          </div>
+          <TanStackRouterDevtools position="bottom-right" />
+          <ReactQueryDevtools buttonPosition="bottom-left" />
+          <Toaster />
+          <Scripts />
         </ThemeProvider>
       </body>
     </html>
